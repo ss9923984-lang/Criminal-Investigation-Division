@@ -33,7 +33,14 @@
         .tab-btn { flex: 1; padding: 10px; background: transparent; color: #8a9ba8; border: none; cursor: pointer; font-weight: bold; }
         .tab-btn.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
 
-        .badge { font-size: 40px; margin-bottom: 5px; }
+        .badge { margin-bottom: 10px; }
+        .cid-logo { width: 96px; height: 96px; object-fit: cover; border-radius: 50%; border: 2px solid var(--accent-gold); box-shadow: 0 0 18px rgba(212, 175, 55, 0.25); }
+        .header-logo { width: 46px; height: 46px; object-fit: cover; border-radius: 50%; border: 1px solid var(--accent-gold); vertical-align: middle; margin-left: 8px; }
+        .rank-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: bold; margin-right: 6px; border: 1px solid var(--accent-gold); color: var(--accent-gold); background: #181102; }
+        .rank-superadmin { color: #fff; background: #5b4300; }
+        .rank-command { color: #000; background: var(--accent-gold); }
+        .rank-officer { color: #fff; background: #145a9c; border-color: #2b9cff; }
+        .rank-user { color: #fff; background: #374151; border-color: #64748b; }
         .auth-container h2 { color: var(--accent-gold); margin-bottom: 5px; }
         .auth-container p { font-size: 11px; color: #8a9ba8; margin-bottom: 15px; }
 
@@ -113,7 +120,7 @@
 
     <!-- شاشة تسجيل الدخول -->
     <div class="auth-container" id="authScreen">
-        <div class="badge">🛡️</div>
+        <div class="badge"><img class="cid-logo" src="Gemini_Generated_Image_dvb7ntdvb7ntdvb7.jfif" alt="CID Logo"></div>
         <h2>CID FEDERAL MDT</h2>
         <p>CRIMINAL INVESTIGATION DIVISION</p>
 
@@ -152,8 +159,14 @@
     <!-- لوحة MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div><strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي</div>
-            <div class="agent-info">العميل: <span id="displayAgent">CID-000</span></div>
+            <div>
+                <img class="header-logo" src="Gemini_Generated_Image_dvb7ntdvb7ntdvb7.jfif" alt="CID Logo">
+                <strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي
+            </div>
+            <div class="agent-info">
+                العميل: <span id="displayAgent">CID-000</span>
+                <span id="displayRank" class="rank-badge">Officer</span>
+            </div>
             <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
         </header>
 
@@ -246,9 +259,9 @@
                     <button class="main-btn" onclick="submitReport()">إرسال التقرير للقيادة</button>
                 </div>
 
-                <!-- 👑 قسم إدارة التقارير الحصري للمشرف -->
+                <!-- 👑 قسم إدارة التقارير حسب الصلاحية -->
                 <div class="panel admin-panel" id="adminReportsSection">
-                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (إدارة كاملة)</h3>
+                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية</h3>
                     <div class="input-group">
                         <label>البحث بالعميل أو برقم/عنوان التقرير:</label>
                         <input type="text" id="searchReportInput" onkeyup="filterReports()" placeholder="اكتب اسم العميل أو عنوان التقرير...">
@@ -258,7 +271,7 @@
                     </div>
                 </div>
 
-                <!-- 👑 قسم إدارة حسابات الأعضاء الحصري للمشرف -->
+                <!-- 👑 قسم إدارة حسابات الأعضاء (Super Admin فقط) -->
                 <div class="panel admin-panel" id="adminUsersSection">
                     <h3 style="color: var(--accent-gold);">👤 إدارة حسابات وصلاحيات العناصر</h3>
                     <div id="manageUsersList">
@@ -308,6 +321,30 @@
         const ADMIN_USER = "KARLOS SEIFEDDINE";
         const ADMIN_PIN = "OUSSAMA2010";
 
+        // نظام الرتب والصلاحيات
+        const ROLES = {
+            superadmin: {
+                label: "Super Admin",
+                className: "rank-superadmin",
+                permissions: ["manageUsers", "manageRoles", "manageReports", "manageWanted", "createReports", "createWanted", "viewAll"]
+            },
+            command: {
+                label: "Command",
+                className: "rank-command",
+                permissions: ["manageReports", "manageWanted", "createReports", "createWanted", "viewAll"]
+            },
+            officer: {
+                label: "Officer",
+                className: "rank-officer",
+                permissions: ["createReports", "createWanted", "viewAll"]
+            },
+            user: {
+                label: "User",
+                className: "rank-user",
+                permissions: ["createReports", "viewAll"]
+            }
+        };
+
         const firebaseConfig = {
             apiKey: "AIzaSyCYeYJsyfxvn43GxwEs66uh0LvPWPXbhGU",
             authDomain: "cid-mdt.firebaseapp.com",
@@ -321,7 +358,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentAgent = "";
+        let currentAgent = "";\n        let currentRole = "user";
         let allReportsCache = [];
         let allWantedCache = [];
 
@@ -430,7 +467,7 @@
                 if (snapshot.exists()) {
                     showMsg('المعرّف مستخدم بالفعل!', 'var(--danger-color)');
                 } else {
-                    db.ref('users/' + agent).set({ pin: pin, online: false });
+                    db.ref('users/' + agent).set({ pin: pin, role: 'officer', online: false });
                     showMsg('تم إنشاء الحساب بنجاح!', 'var(--success-color)');
                     setTimeout(() => switchTab('login'), 1200);
                 }
@@ -449,18 +486,57 @@
             db.ref('users/' + agent).once('value', snapshot => {
                 const userData = snapshot.val();
                 if (userData && userData.pin === pin) {
-                    setupUserSession(agent);
+                    setupUserSession(agent, userData.role || 'officer');
                 } else {
                     showMsg('بيانات الدخول غير صحيحة!', 'var(--danger-color)');
                 }
             });
         }
 
-        function setupUserSession(agent) {
+        function hasPermission(permission) {
+            return !!(ROLES[currentRole] && ROLES[currentRole].permissions.includes(permission));
+        }
+
+        function updatePermissionUI() {
+            const reportSection = document.getElementById('adminReportsSection');
+            const usersSection = document.getElementById('adminUsersSection');
+            const wantedAddButton = document.querySelector('button[onclick="toggleWantedForm()"]');
+            const wantedForm = document.getElementById('addWantedForm');
+
+            reportSection.style.display = hasPermission('manageReports') ? 'block' : 'none';
+            usersSection.style.display = hasPermission('manageUsers') ? 'block' : 'none';
+
+            if (wantedAddButton) wantedAddButton.style.display = hasPermission('createWanted') ? 'inline-block' : 'none';
+            if (!hasPermission('createWanted')) wantedForm.style.display = 'none';
+
+            const reportSubmit = document.querySelector('button[onclick="submitReport()"]');
+            if (reportSubmit) reportSubmit.style.display = hasPermission('createReports') ? 'block' : 'none';
+
+            const reportTitle = document.getElementById('reportTitle');
+            const reportContent = document.getElementById('reportContent');
+            if (reportTitle) reportTitle.disabled = !hasPermission('createReports');
+            if (reportContent) reportContent.disabled = !hasPermission('createReports');
+            const reportImage = document.getElementById('reportImage');
+            if (reportImage) reportImage.disabled = !hasPermission('createReports');
+        }
+
+        function setupUserSession(agent, roleOverride = null) {
             currentAgent = agent;
+
+            if (agent === ADMIN_USER) {
+                currentRole = 'superadmin';
+            } else {
+                currentRole = roleOverride || 'officer';
+            }
+
+            const role = ROLES[currentRole] || ROLES.user;
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('mdtScreen').style.display = 'block';
             document.getElementById('displayAgent').innerText = agent;
+
+            const rankEl = document.getElementById('displayRank');
+            rankEl.innerText = role.label;
+            rankEl.className = 'rank-badge ' + role.className;
 
             const userStatusRef = db.ref('users/' + currentAgent + '/online');
             userStatusRef.set(true);
@@ -469,18 +545,12 @@
             listenToUsers();
             listenToWanted();
             initPenalCalculator();
+            updatePermissionUI();
 
-            if (currentAgent === ADMIN_USER) {
-                document.getElementById('adminReportsSection').style.display = 'block';
-                document.getElementById('adminUsersSection').style.display = 'block';
-                listenToReports();
-                listenToManageUsers();
-            } else {
-                document.getElementById('adminReportsSection').style.display = 'none';
-                document.getElementById('adminUsersSection').style.display = 'none';
-            }
+            if (hasPermission('manageReports')) listenToReports();
+            if (hasPermission('manageUsers')) listenToManageUsers();
 
-            addLog("تم تسجيل الدخول: " + agent);
+            addLog("تم تسجيل الدخول: " + agent + " | الرتبة: " + role.label);
         }
 
         function logout() {
@@ -496,19 +566,24 @@
             db.ref('users').on('value', snapshot => {
                 const container = document.getElementById('manageUsersList');
                 container.innerHTML = '';
-                const data = snapshot.val();
+                const data = snapshot.val() || {};
 
                 for (let agent in data) {
                     if (agent === ADMIN_USER) continue;
+
+                    const userRole = data[agent].role || 'officer';
+                    const role = ROLES[userRole] || ROLES.officer;
 
                     const div = document.createElement('div');
                     div.className = 'manage-user-item';
                     div.innerHTML = `
                         <div>
                             <strong>👤 ${agent}</strong>
-                            <span style="font-size:11px; color:#8a9ba8; margin-right:10px;">(PIN: ${data[agent].pin || '****'})</span>
+                            <span class="rank-badge ${role.className}">${role.label}</span>
+                            <span style="font-size:11px; color:#8a9ba8; margin-right:10px;">متصل: ${data[agent].online ? 'نعم' : 'لا'}</span>
                         </div>
                         <div>
+                            <button class="btn-edit" onclick="changeUserRole('${agent}')">⭐ تغيير الرتبة</button>
                             <button class="btn-edit" onclick="changeUserPin('${agent}')">🔑 تغيير الرمز</button>
                             <button class="btn-delete" onclick="deleteUserAccount('${agent}')">🗑️ حذف الحساب</button>
                         </div>
@@ -522,7 +597,26 @@
             });
         }
 
+        function changeUserRole(agent) {
+            if (!hasPermission('manageRoles')) return alert('❌ ليس لديك صلاحية إدارة الرتب.');
+            const options = Object.entries(ROLES)
+                .filter(([key]) => key !== 'superadmin')
+                .map(([key, role], i) => `${i + 1}. ${role.label}`)
+                .join('\n');
+
+            const choice = prompt(`اختر الرتبة الجديدة لـ ${agent}:\n\n${options}\n\nاكتب رقم الرتبة:`);
+            const roles = ['command', 'officer', 'user'];
+            const index = parseInt(choice, 10) - 1;
+
+            if (roles[index]) {
+                db.ref('users/' + agent + '/role').set(roles[index]);
+                addLog(`تم تغيير رتبة ${agent} إلى ${ROLES[roles[index]].label}`);
+                alert('تم تغيير الرتبة بنجاح!');
+            }
+        }
+
         function changeUserPin(agent) {
+            if (!hasPermission('manageUsers')) return alert('❌ لا تملك صلاحية إدارة الحسابات.');
             const newPin = prompt(`أدخل رمز الأمان (PIN) الجديد للحساب (${agent}):`);
             if (newPin) {
                 db.ref('users/' + agent + '/pin').set(newPin);
@@ -532,7 +626,8 @@
         }
 
         function deleteUserAccount(agent) {
-            if (confirm(`هل أنت تأكد من حظر وحذف حساب (${agent}) نهائياً من النظام؟`)) {
+            if (!hasPermission('manageUsers')) return alert('❌ لا تملك صلاحية إدارة الحسابات.');
+            if (confirm(`هل أنت متأكد من حذف حساب (${agent}) نهائياً من النظام؟`)) {
                 db.ref('users/' + agent).remove();
                 addLog(`تم حذف حساب العميل: ${agent}`);
                 alert('تم حذف الحساب بنجاح!');
@@ -546,6 +641,7 @@
         }
 
         function submitWanted() {
+            if (!hasPermission('createWanted')) return alert('❌ لا تملك صلاحية إضافة مطلوبين.');
             const name = document.getElementById('wantedName').value.trim();
             const danger = document.getElementById('wantedDanger').value;
             const reason = document.getElementById('wantedReason').value.trim();
@@ -602,16 +698,12 @@
                 card.className = `wanted-card ${item.danger}`;
                 
                 let adminControls = '';
-                if (currentAgent === ADMIN_USER) {
+                if (hasPermission('manageWanted')) {
                     adminControls = `
                         <div class="action-btns">
                             <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
                             <button class="btn-delete" onclick="removeWanted('${item.id}', '${item.name}')">🗑️ حذف</button>
                         </div>
-                    `;
-                } else {
-                    adminControls = `
-                        <button onclick="removeWanted('${item.id}', '${item.name}')" style="width:100%; margin-top:8px; padding:4px; background:#1e2c4a; border:none; color:var(--danger-color); font-size:11px; border-radius:3px; cursor:pointer;">تم القبض</button>
                     `;
                 }
 
@@ -627,6 +719,7 @@
         }
 
         function editWanted(id, oldName, oldReason) {
+            if (!hasPermission('manageWanted')) return alert('❌ لا تملك صلاحية تعديل المطلوبين.');
             const newName = prompt("تعديل اسم المطلوب:", oldName);
             const newReason = prompt("تعديل التهمة والسبب:", oldReason);
 
@@ -640,6 +733,7 @@
         }
 
         function removeWanted(id, name) {
+            if (!hasPermission('manageWanted')) return alert('❌ لا تملك صلاحية حذف المطلوبين.');
             if (confirm(`هل أنت تأكد من إزالة (${name}) من قائمة المطلوبين؟`)) {
                 db.ref('wanted/' + id).remove();
                 addLog('تم إزالة المطلوب: ' + name);
@@ -694,6 +788,7 @@
 
         /* 📝 التقارير وإدارتها */
         function submitReport() {
+            if (!hasPermission('createReports')) return alert('❌ لا تملك صلاحية إنشاء التقارير.');
             const title = document.getElementById('reportTitle').value.trim();
             const content = document.getElementById('reportContent').value.trim();
             const fileInput = document.getElementById('reportImage');
@@ -762,7 +857,7 @@
                 div.className = 'report-card';
 
                 let adminReportBtns = '';
-                if (currentAgent === ADMIN_USER) {
+                if (hasPermission('manageReports')) {
                     adminReportBtns = `
                         <div class="action-btns" style="margin-top:10px;">
                             <button class="btn-edit" onclick="editReport('${rep.id}', '${rep.title}', \`${rep.content}\`)">✏️ تعديل التقرير</button>
@@ -786,6 +881,7 @@
         }
 
         function editReport(id, oldTitle, oldContent) {
+            if (!hasPermission('manageReports')) return alert('❌ لا تملك صلاحية تعديل التقارير.');
             const newTitle = prompt("تعديل عنوان التقرير:", oldTitle);
             const newContent = prompt("تعديل تفاصيل التقرير:", oldContent);
 
@@ -799,6 +895,7 @@
         }
 
         function deleteReport(id) {
+            if (!hasPermission('manageReports')) return alert('❌ لا تملك صلاحية حذف التقارير.');
             if (confirm("هل أنت تأكد من حذف هذا التقرير نهائياً؟")) {
                 db.ref('reports/' + id).remove();
                 addLog('تم حذف تقرير من الأرشيف.');
