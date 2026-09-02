@@ -110,6 +110,19 @@
         .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
         
         .manage-user-item { display: flex; justify-content: space-between; align-items: center; background: #080d1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border: 1px solid #1e2c4a; font-size: 13px; }
+        .criminal-profile { background: #080d1a; border: 1px solid #1e2c4a; border-radius: 6px; padding: 14px; margin-top: 12px; }
+        .criminal-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+        .criminal-stat { background: #0d1526; border: 1px solid #1e2c4a; border-radius: 5px; padding: 10px; text-align: center; }
+        .criminal-stat strong { display: block; color: var(--accent-gold); font-size: 18px; }
+        .record-item { background: #0d1526; border: 1px solid #1e2c4a; border-right: 3px solid var(--accent-blue); border-radius: 5px; padding: 10px; margin-bottom: 8px; }
+        .record-item.violation { border-right-color: var(--accent-gold); }
+        .record-item.memo { border-right-color: #8a9ba8; }
+        .record-item.case { border-right-color: var(--danger-color); }
+        .record-meta { font-size: 10px; color: #8a9ba8; margin-top: 5px; }
+        .record-actions { display: flex; gap: 5px; margin-top: 8px; }
+        @media (max-width: 700px) {
+            .criminal-stats { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 
     <!-- Firebase SDKs -->
@@ -241,6 +254,85 @@
                     </div>
                 </div>
 
+                <!-- 📂 السجل الجنائي -->
+                <div class="panel">
+                    <h3 style="color: var(--accent-gold);">📂 السجل الجنائي للمواطنين</h3>
+                    <p style="font-size:11px; color:#8a9ba8; margin-bottom:10px;">
+                        ابحث بالاسم أو Citizen ID لعرض القضايا والمخالفات والمذكرات والتقارير المرتبطة.
+                    </p>
+
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="criminalSearchInput"
+                               placeholder="مثال: CID-102 أو John Doe..."
+                               style="flex:1; padding:8px; background:#080d1a; border:1px solid #1e2c4a; color:#fff; border-radius:4px;"
+                               onkeydown="if(event.key==='Enter') searchCriminalProfile()">
+                        <button class="main-btn" style="width:auto; padding:8px 18px;" onclick="searchCriminalProfile()">🔎 بحث</button>
+                    </div>
+
+                    <div id="criminalSearchResults" style="display:none;"></div>
+
+                    <div id="criminalProfilePanel" class="criminal-profile" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <div style="font-size:18px; font-weight:bold; color:#fff;" id="criminalProfileName">-</div>
+                                <div style="font-size:11px; color:#8a9ba8;">Citizen ID: <span id="criminalProfileId">-</span></div>
+                            </div>
+                            <span id="criminalProfileStatus" class="rank-badge">عادي</span>
+                        </div>
+
+                        <div class="criminal-stats">
+                            <div class="criminal-stat"><strong id="criminalCasesCount">0</strong><small>قضايا</small></div>
+                            <div class="criminal-stat"><strong id="criminalViolationsCount">0</strong><small>مخالفات</small></div>
+                            <div class="criminal-stat"><strong id="criminalMemosCount">0</strong><small>مذكرات</small></div>
+                            <div class="criminal-stat"><strong id="criminalReportsCount">0</strong><small>تقارير</small></div>
+                        </div>
+
+                        <div id="criminalRecordAddBox" style="display:none; background:#0d1526; border:1px solid #1e2c4a; padding:12px; border-radius:5px; margin-bottom:12px;">
+                            <h4 style="color:var(--accent-blue); margin-bottom:10px;">➕ إضافة سجل</h4>
+                            <div class="two-cols">
+                                <div class="input-group">
+                                    <label>نوع السجل</label>
+                                    <select id="recordType">
+                                        <option value="case">⚖️ قضية</option>
+                                        <option value="violation">🚗 مخالفة</option>
+                                        <option value="memo">📝 مذكرة</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>العنوان</label>
+                                    <input type="text" id="recordTitle" placeholder="مثال: قضية سرقة">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>التفاصيل</label>
+                                <textarea id="recordDetails" rows="3" placeholder="اكتب تفاصيل السجل..."></textarea>
+                            </div>
+                            <button class="main-btn" onclick="addCriminalRecord()">حفظ السجل</button>
+                        </div>
+
+                        <div id="criminalRecordsList">
+                            <p style="color:#8a9ba8; text-align:center;">لا توجد سجلات.</p>
+                        </div>
+                    </div>
+
+                    <div id="criminalCreateBox" style="display:none; margin-top:12px; background:#0d1526; border:1px solid #1e2c4a; padding:12px; border-radius:5px;">
+                        <h4 style="color:var(--accent-blue); margin-bottom:10px;">👤 إنشاء ملف مواطن</h4>
+                        <div class="two-cols">
+                            <div class="input-group">
+                                <label>Citizen ID</label>
+                                <input type="text" id="newCitizenId" placeholder="مثال: CID-102">
+                            </div>
+                            <div class="input-group">
+                                <label>الاسم الكامل</label>
+                                <input type="text" id="newCitizenName" placeholder="الاسم الكامل">
+                            </div>
+                        </div>
+                        <button class="main-btn" onclick="createCriminalProfile()">إنشاء الملف</button>
+                    </div>
+
+                    <button id="newCriminalBtn" class="btn-edit" style="display:none; width:100%; margin-top:10px; padding:9px;" onclick="toggleCriminalCreate()">+ إنشاء ملف مواطن جديد</button>
+                </div>
+
                 <!-- نموذج كتابة التقرير -->
                 <div class="panel">
                     <h3>📝 رفع تقرير ميداني جديد</h3>
@@ -251,6 +343,10 @@
                     <div class="input-group">
                         <label>تفاصيل التقرير</label>
                         <textarea id="reportContent" rows="3" placeholder="اكتب تفاصيل التقرير بالتفصيل..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Citizen ID المرتبط بالتقرير (اختياري)</label>
+                        <input type="text" id="reportCitizenId" placeholder="مثال: CID-102">
                     </div>
                     <div class="input-group">
                         <label>إرفاق صورة (اختياري)</label>
@@ -326,22 +422,22 @@
             superadmin: {
                 label: "Super Admin",
                 className: "rank-superadmin",
-                permissions: ["manageUsers", "manageRoles", "manageReports", "manageWanted", "createReports", "createWanted", "viewAll"]
+                permissions: ["manageUsers", "manageRoles", "manageReports", "manageWanted", "manageRecords", "createReports", "createWanted", "createRecords", "viewRecords", "viewAll"]
             },
             command: {
                 label: "Command",
                 className: "rank-command",
-                permissions: ["manageReports", "manageWanted", "createReports", "createWanted", "viewAll"]
+                permissions: ["manageReports", "manageWanted", "manageRecords", "createReports", "createWanted", "createRecords", "viewRecords", "viewAll"]
             },
             officer: {
                 label: "Officer",
                 className: "rank-officer",
-                permissions: ["createReports", "createWanted", "viewAll"]
+                permissions: ["createReports", "createWanted", "createRecords", "viewRecords", "viewAll"]
             },
             user: {
                 label: "User",
                 className: "rank-user",
-                permissions: ["createReports", "viewAll"]
+                permissions: ["createReports", "viewRecords", "viewAll"]
             }
         };
 
@@ -358,9 +454,10 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentAgent = "";\n        let currentRole = "user";
+        let currentAgent = "";
+        let currentRole = "user";
         let allReportsCache = [];
-        let allWantedCache = [];
+        let allWantedCache = [];\n        let currentCriminalId = "";\n        let currentCriminalProfile = null;
 
         // قائمة المخالفات والعقوبات المستخرجة من الصور المرفقة
         const penalCode = [
@@ -500,11 +597,13 @@
         function updatePermissionUI() {
             const reportSection = document.getElementById('adminReportsSection');
             const usersSection = document.getElementById('adminUsersSection');
+            const criminalCreateButton = document.getElementById('newCriminalBtn');
             const wantedAddButton = document.querySelector('button[onclick="toggleWantedForm()"]');
             const wantedForm = document.getElementById('addWantedForm');
 
             reportSection.style.display = hasPermission('manageReports') ? 'block' : 'none';
             usersSection.style.display = hasPermission('manageUsers') ? 'block' : 'none';
+            criminalCreateButton.style.display = hasPermission('createRecords') ? 'block' : 'none';
 
             if (wantedAddButton) wantedAddButton.style.display = hasPermission('createWanted') ? 'inline-block' : 'none';
             if (!hasPermission('createWanted')) wantedForm.style.display = 'none';
@@ -559,6 +658,8 @@
             }
             document.getElementById('mdtScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'block';
+            currentCriminalId = '';
+            currentCriminalProfile = null;
         }
 
         /* 👑 إدارة الحسابات (خاصة بالمشرف فقط) */
@@ -786,11 +887,256 @@
             document.getElementById('totalFine').innerText = "$" + totalFine.toLocaleString();
         }
 
-        /* 📝 التقارير وإدارتها */
+        /* 📂 السجل الجنائي */
+        function toggleCriminalCreate() {
+            const box = document.getElementById('criminalCreateBox');
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function createCriminalProfile() {
+            if (!hasPermission('createRecords')) return alert('❌ لا تملك صلاحية إنشاء ملفات المواطنين.');
+
+            const id = document.getElementById('newCitizenId').value.trim().toUpperCase();
+            const name = document.getElementById('newCitizenName').value.trim();
+
+            if (!id || !name) return alert('يرجى إدخال Citizen ID والاسم.');
+
+            db.ref('citizens/' + id).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    alert('هذا Citizen ID موجود بالفعل.');
+                    return;
+                }
+
+                db.ref('citizens/' + id).set({
+                    citizenId: id,
+                    name: name,
+                    status: 'normal',
+                    createdBy: currentAgent,
+                    createdAt: new Date().toLocaleString('ar-EG')
+                }, error => {
+                    if (error) {
+                        alert('حدث خطأ أثناء إنشاء الملف.');
+                        return;
+                    }
+                    addLog(`تم إنشاء ملف مواطن: ${id}`);
+                    document.getElementById('newCitizenId').value = '';
+                    document.getElementById('newCitizenName').value = '';
+                    toggleCriminalCreate();
+                    openCriminalProfile(id);
+                });
+            });
+        }
+
+        function searchCriminalProfile() {
+            const query = document.getElementById('criminalSearchInput').value.trim().toLowerCase();
+            if (!query) return alert('اكتب الاسم أو Citizen ID للبحث.');
+
+            db.ref('citizens').once('value', snapshot => {
+                const data = snapshot.val() || {};
+                const results = [];
+
+                Object.keys(data).forEach(id => {
+                    const citizen = data[id];
+                    if (
+                        String(citizen.citizenId || id).toLowerCase().includes(query) ||
+                        String(citizen.name || '').toLowerCase().includes(query)
+                    ) {
+                        results.push(citizen);
+                    }
+                });
+
+                const box = document.getElementById('criminalSearchResults');
+                box.style.display = 'block';
+
+                if (!results.length) {
+                    box.innerHTML = `<div style="padding:10px; color:#8a9ba8; background:#080d1a; border:1px solid #1e2c4a; border-radius:4px;">
+                        لا يوجد ملف مطابق. ${hasPermission('createRecords') ? 'يمكنك إنشاء ملف جديد بالأسفل.' : ''}
+                    </div>`;
+                    return;
+                }
+
+                box.innerHTML = results.map(c => `
+                    <button onclick="openCriminalProfile('${escapeHtmlAttr(c.citizenId)}')"
+                        style="display:block; width:100%; text-align:right; padding:10px; margin-bottom:6px; background:#080d1a; color:#fff; border:1px solid #1e2c4a; border-radius:4px; cursor:pointer;">
+                        <strong>${escapeHtml(c.name)}</strong>
+                        <span style="color:#8a9ba8; font-size:11px;"> — ${escapeHtml(c.citizenId)}</span>
+                    </button>
+                `).join('');
+            });
+        }
+
+        function openCriminalProfile(citizenId) {
+            currentCriminalId = citizenId;
+            db.ref('citizens/' + citizenId).once('value', snapshot => {
+                if (!snapshot.exists()) return alert('الملف غير موجود.');
+
+                currentCriminalProfile = snapshot.val();
+                document.getElementById('criminalSearchResults').style.display = 'none';
+                document.getElementById('criminalProfilePanel').style.display = 'block';
+                document.getElementById('criminalProfileName').innerText = currentCriminalProfile.name || '-';
+                document.getElementById('criminalProfileId').innerText = currentCriminalProfile.citizenId || citizenId;
+                document.getElementById('criminalProfileStatus').innerText = currentCriminalProfile.status || 'عادي';
+
+                document.getElementById('criminalRecordAddBox').style.display =
+                    hasPermission('createRecords') ? 'block' : 'none';
+
+                loadCriminalRecords(citizenId);
+            });
+        }
+
+        function loadCriminalRecords(citizenId) {
+            db.ref('citizens/' + citizenId + '/records').once('value', snapshot => {
+                const data = snapshot.val() || {};
+                const records = Object.keys(data).map(id => ({...data[id], id}));
+
+                const cases = records.filter(r => r.type === 'case').length;
+                const violations = records.filter(r => r.type === 'violation').length;
+                const memos = records.filter(r => r.type === 'memo').length;
+
+                document.getElementById('criminalCasesCount').innerText = cases;
+                document.getElementById('criminalViolationsCount').innerText = violations;
+                document.getElementById('criminalMemosCount').innerText = memos;
+
+                const list = document.getElementById('criminalRecordsList');
+
+                if (!records.length) {
+                    list.innerHTML = '<p style="color:#8a9ba8; text-align:center;">لا توجد قضايا أو مخالفات أو مذكرات.</p>';
+                } else {
+                    records.sort((a,b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+                    list.innerHTML = records.map(record => {
+                        const label = record.type === 'case' ? '⚖️ قضية' :
+                                      record.type === 'violation' ? '🚗 مخالفة' : '📝 مذكرة';
+                        const actionButtons = hasPermission('manageRecords') ? `
+                            <div class="record-actions">
+                                <button class="btn-edit" onclick="editCriminalRecord('${escapeHtmlAttr(record.id)}', '${escapeHtmlAttr(record.title || '')}', \`${escapeJs(record.details || '')}\`)">✏️ تعديل</button>
+                                <button class="btn-delete" onclick="deleteCriminalRecord('${escapeHtmlAttr(record.id)}')">🗑️ حذف</button>
+                            </div>` : '';
+
+                        return `
+                            <div class="record-item ${record.type}">
+                                <strong style="color:var(--accent-blue);">${label} — ${escapeHtml(record.title || 'بدون عنوان')}</strong>
+                                <p style="white-space:pre-wrap; margin-top:6px; font-size:12px;">${escapeHtml(record.details || '')}</p>
+                                <div class="record-meta">👮 ${escapeHtml(record.createdBy || '-')} · 📅 ${escapeHtml(record.createdAt || '-')}</div>
+                                ${actionButtons}
+                            </div>`;
+                    }).join('');
+                }
+
+                db.ref('reports').orderByChild('citizenId').equalTo(citizenId).once('value', reportSnap => {
+                    const reportData = reportSnap.val() || {};
+                    const reports = Object.values(reportData);
+                    document.getElementById('criminalReportsCount').innerText = reports.length;
+
+                    if (reports.length) {
+                        const reportHtml = `
+                            <div style="margin-top:12px; border-top:1px solid #1e2c4a; padding-top:10px;">
+                                <h4 style="color:var(--accent-gold); margin-bottom:8px;">📑 التقارير المرتبطة</h4>
+                                ${reports.map(r => `
+                                    <div class="record-item">
+                                        <strong>${escapeHtml(r.title || 'تقرير')}</strong>
+                                        <p style="white-space:pre-wrap; margin-top:5px; font-size:12px;">${escapeHtml(r.content || '')}</p>
+                                        <div class="record-meta">👮 ${escapeHtml(r.agent || '-')} · 📅 ${escapeHtml(r.date || '-')}</div>
+                                    </div>
+                                `).join('')}
+                            </div>`;
+                        list.innerHTML += reportHtml;
+                    }
+                });
+            });
+        }
+
+        function addCriminalRecord() {
+            if (!hasPermission('createRecords')) return alert('❌ لا تملك صلاحية إضافة سجلات.');
+
+            if (!currentCriminalId) return alert('اختر ملف مواطن أولاً.');
+
+            const type = document.getElementById('recordType').value;
+            const title = document.getElementById('recordTitle').value.trim();
+            const details = document.getElementById('recordDetails').value.trim();
+
+            if (!title || !details) return alert('يرجى إدخال العنوان والتفاصيل.');
+
+            const ref = db.ref('citizens/' + currentCriminalId + '/records').push();
+            ref.set({
+                type,
+                title,
+                details,
+                createdBy: currentAgent,
+                createdAt: new Date().toLocaleString('ar-EG'),
+                createdAtMs: Date.now()
+            }, error => {
+                if (error) {
+                    alert('تعذر حفظ السجل.');
+                    return;
+                }
+
+                addLog(`تمت إضافة سجل جنائي إلى ${currentCriminalId}: ${title}`);
+                document.getElementById('recordTitle').value = '';
+                document.getElementById('recordDetails').value = '';
+                loadCriminalRecords(currentCriminalId);
+            });
+        }
+
+        function editCriminalRecord(recordId, oldTitle, oldDetails) {
+            if (!hasPermission('manageRecords')) return alert('❌ لا تملك صلاحية تعديل السجلات.');
+
+            const newTitle = prompt('تعديل عنوان السجل:', oldTitle);
+            const newDetails = prompt('تعديل تفاصيل السجل:', oldDetails);
+
+            if (!newTitle || !newDetails) return;
+
+            db.ref('citizens/' + currentCriminalId + '/records/' + recordId).update({
+                title: newTitle,
+                details: newDetails,
+                updatedBy: currentAgent,
+                updatedAt: new Date().toLocaleString('ar-EG'),
+                updatedAtMs: Date.now()
+            }, error => {
+                if (!error) {
+                    addLog(`تم تعديل سجل جنائي: ${recordId}`);
+                    loadCriminalRecords(currentCriminalId);
+                }
+            });
+        }
+
+        function deleteCriminalRecord(recordId) {
+            if (!hasPermission('manageRecords')) return alert('❌ لا تملك صلاحية حذف السجلات.');
+            if (!confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) return;
+
+            db.ref('citizens/' + currentCriminalId + '/records/' + recordId).remove(error => {
+                if (!error) {
+                    addLog(`تم حذف سجل جنائي: ${recordId}`);
+                    loadCriminalRecords(currentCriminalId);
+                }
+            });
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeHtmlAttr(value) {
+            return escapeHtml(value).replace(/`/g, '&#096;');
+        }
+
+        function escapeJs(value) {
+            return String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/`/g, '\\`')
+                .replace(/\$\{/g, '\\${');
+        }
+
+                /* 📝 التقارير وإدارتها */
         function submitReport() {
             if (!hasPermission('createReports')) return alert('❌ لا تملك صلاحية إنشاء التقارير.');
             const title = document.getElementById('reportTitle').value.trim();
             const content = document.getElementById('reportContent').value.trim();
+            const citizenId = document.getElementById('reportCitizenId').value.trim();
             const fileInput = document.getElementById('reportImage');
             const file = fileInput.files[0];
 
@@ -804,15 +1150,15 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    saveReportToDatabase(title, content, e.target.result, timestamp);
+                    saveReportToDatabase(title, content, e.target.result, timestamp, citizenId);
                 };
                 reader.readAsDataURL(file);
             } else {
-                saveReportToDatabase(title, content, null, timestamp);
+                saveReportToDatabase(title, content, null, timestamp, citizenId);
             }
         }
 
-        function saveReportToDatabase(title, content, imgData, timestamp) {
+        function saveReportToDatabase(title, content, imgData, timestamp, citizenId = '') {
             const reportRef = db.ref('reports').push();
             reportRef.set({
                 id: reportRef.key,
@@ -820,13 +1166,15 @@
                 title: title,
                 content: content,
                 image: imgData,
-                date: timestamp
+                date: timestamp,
+                citizenId: citizenId || null
             }, (error) => {
                 if (!error) {
                     alert('تم إرسال التقرير بنجاح إلى القيادة!');
                     document.getElementById('reportTitle').value = '';
                     document.getElementById('reportContent').value = '';
                     document.getElementById('reportImage').value = '';
+                    document.getElementById('reportCitizenId').value = '';
                     addLog('تم رفع تقرير جديد: ' + title);
                 }
             });
