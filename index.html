@@ -90,14 +90,14 @@
         .btn-delete { background: var(--danger-color); color: #fff; border: none; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; flex: 1; }
 
         /* حاسبة العقوبات */
-        .charges-list { max-height: 180px; overflow-y: auto; background: #050811; padding: 10px; border-radius: 4px; border: 1px solid #1e2c4a; }
-        .charge-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #111d33; font-size: 12px; }
+        .charges-list { max-height: 250px; overflow-y: auto; background: #050811; padding: 10px; border-radius: 4px; border: 1px solid #1e2c4a; }
+        .charge-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #111d33; font-size: 12px; }
         .charge-item input { margin-left: 8px; }
 
         .calc-results { display: flex; justify-content: space-around; background: #080d1a; padding: 12px; border-radius: 4px; margin-top: 10px; border: 1px solid var(--accent-gold); text-align: center; }
         .calc-results div span { display: block; font-size: 18px; font-weight: bold; color: var(--accent-gold); }
 
-        /* أقسام الإدارة الخاصة بك */
+        /* أقسام الإدارة */
         .admin-panel { display: none; background: #181102; border: 1px solid var(--accent-gold); margin-top: 20px; }
         .report-card { background: #080d1a; border: 1px solid #2a3a5c; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
         .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
@@ -325,15 +325,91 @@
         let allReportsCache = [];
         let allWantedCache = [];
 
+        // قائمة المخالفات والعقوبات المستخرجة من الصور المرفقة
         const penalCode = [
-            { id: 1, name: "عصيان أوامر السلطات", jail: 10, fine: 500 },
-            { id: 2, name: "القيادة بدون رخصة / بطريقة خطرة", jail: 5, fine: 1000 },
-            { id: 3, name: "حيازة أسلحة غير مرخصة", jail: 15, fine: 2500 },
-            { id: 4, name: "حيازة مواد مخدرة (تعدي)", jail: 15, fine: 2000 },
-            { id: 5, name: "السرقة الجسيمة / السطو", jail: 20, fine: 5000 },
-            { id: 6, name: "الاعتداء على رجال الأمن", jail: 30, fine: 7500 },
-            { id: 7, name: "الخطف أو احتجاز رهائن", jail: 45, fine: 10000 },
-            { id: 8, name: "السطو على البنك الفدرالي", jail: 60, fine: 20000 }
+            // المخالفات المرورية
+            { id: 4, name: "قطع الاشارة", jail: 0, fine: 1500 },
+            { id: 5, name: "تجاوز السرعة", jail: 0, fine: 2000 },
+            { id: 6, name: "وقوف خاطئ", jail: 0, fine: 1000 },
+            { id: 7, name: "عكس السير", jail: 0, fine: 1000 },
+            { id: 8, name: "الالتفاف بشكل خاطئ", jail: 0, fine: 500 },
+            { id: 9, name: "القيادة المتهورة", jail: 0, fine: 2000 },
+            { id: 10, name: "عدم استخدام إشارة المركبة", jail: 0, fine: 600 },
+            { id: 11, name: "عدم حمل هوية", jail: 10, fine: 5000 },
+            { id: 12, name: "عدم حمل رخصة قيادة", jail: 5, fine: 5000 },
+            { id: 13, name: "القيادة تحت تأثير المسكرات", jail: 0, fine: 1050 },
+            { id: 14, name: "عدم الالتزام بالمركبة + تعريض حياة المواطنين للخطر", jail: 0, fine: 2500 },
+            { id: 15, name: "السباقات غير القانونية", jail: 0, fine: 8000 },
+            { id: 16, name: "الترفيع بالدراجة النارية", jail: 0, fine: 1500 },
+            { id: 17, name: "تدمير ممتلكات الدولة", jail: 0, fine: 300 },
+            { id: 18, name: "الهروب من الشرطة", jail: 25, fine: 4000 },
+
+            // المخالفات العامة
+            { id: 20, name: "التسول", jail: 20, fine: 0 },
+            { id: 21, name: "مخالفة ذوق عام", jail: 20, fine: 2500 },
+            { id: 22, name: "إزعاج المواطنين", jail: 10, fine: 1050 },
+            { id: 23, name: "إزعاج السلطات", jail: 25, fine: 2100 },
+            { id: 24, name: "استهزاء برجال الأمن", jail: 30, fine: 10000 },
+            { id: 25, name: "عدم الانصياع إلى أوامر الشرطة", jail: 25, fine: 6000 },
+            { id: 26, name: "بلاغ كاذب", jail: 15, fine: 6000 },
+            { id: 27, name: "التدخل بشؤون الشرطة", jail: 5, fine: 10000 },
+            { id: 28, name: "تحرش", jail: 20, fine: 2500 },
+            { id: 29, name: "إهانة رجل أمن", jail: 40, fine: 10000 },
+            { id: 30, name: "محاولة الرشوة", jail: 20, fine: 3500 },
+            { id: 31, name: "الرشوة", jail: 30, fine: 5000 },
+            { id: 32, name: "شهادة الزور", jail: 0, fine: 5000 },
+            { id: 33, name: "الابتزاز", jail: 10, fine: 10000 },
+            { id: 34, name: "عدم الإلتزام بأدوات السلامة", jail: 0, fine: 600 },
+            { id: 35, name: "المقاومة أثناء الإعتقال", jail: 15, fine: 3500 },
+            { id: 36, name: "عدم إحترام المحامي", jail: 50, fine: 10000 },
+            { id: 37, name: "الاشتباك بالأيادي", jail: 10, fine: 2500 },
+            { id: 38, name: "إنتحال الشخصية", jail: 20, fine: 12500 },
+
+            // المخالفات المتعلقة بالأسلحة
+            { id: 40, name: "التجارة بالسلاح من الدرجة الأولى", jail: 10, fine: 10000 },
+            { id: 41, name: "التجارة بالسلاح من الدرجة الثانية", jail: 20, fine: 20000 },
+            { id: 42, name: "التجارة بالسلاح من الدرجة الثالثة", jail: 30, fine: 40000 },
+            { id: 43, name: "سلاح غير ترخيص", jail: 45, fine: 3500 },
+            { id: 44, name: "سلاح غير قانوني - السلاح الثقيل", jail: 60, fine: 5000 },
+            { id: 45, name: "إخراج سلاح", jail: 20, fine: 1500 },
+            { id: 46, name: "حمل (Grabbler)", jail: 75, fine: 50000 },
+
+            // الجرائم المتعلقة بالقتل
+            { id: 48, name: "إسقاط مواطن", jail: 20, fine: 5000 },
+            { id: 49, name: "إسقاط بلا عمد", jail: 15, fine: 1500 },
+            { id: 50, name: "محاولة إسقاط مواطن", jail: 15, fine: 3000 },
+            { id: 51, name: "إصابة شرطي", jail: 25, fine: 10000 },
+            { id: 52, name: "محاولة إصابة شرطي", jail: 15, fine: 5000 },
+
+            // الجرائم المتعلقة بالممنوعات
+            { id: 54, name: "ترويج مخدرات من الدرجة الأولى", jail: 10, fine: 5000 },
+            { id: 55, name: "ترويج مخدرات من الدرجة الثانية", jail: 15, fine: 10000 },
+            { id: 56, name: "حيازة مخدرات", jail: 15, fine: 3000 },
+            { id: 57, name: "تجارة الممنوعات", jail: 20, fine: 3500 },
+            { id: 58, name: "حيازة الممنوعات من الدرجة الأولى", jail: 17, fine: 1000 },
+            { id: 59, name: "حيازة الممنوعات من الدرجة الثانية", jail: 18, fine: 2500 },
+            { id: 60, name: "حيازة الممنوعات من الدرجة الثالثة", jail: 19, fine: 10000 },
+
+            // الجرائم الجنائية
+            { id: 62, name: "الدخول للمنشآت العسكرية", jail: 10, fine: 18500 },
+            { id: 63, name: "إطلاق أعيرة نارية", jail: 15, fine: 7500 },
+            { id: 64, name: "محاولة اختطاف", jail: 20, fine: 3500 },
+            { id: 65, name: "اختطاف", jail: 30, fine: 5000 },
+            { id: 66, name: "اختطاف رجل الدولة", jail: 35, fine: 10000 },
+            { id: 67, name: "قتال الشوارع", jail: 20, fine: 7500 },
+            { id: 68, name: "محاولة تهريب مجرم", jail: 0, fine: 5000 },
+            { id: 69, name: "تهريب مجرم", jail: 0, fine: 10000 },
+            { id: 70, name: "الهروب من السجن", jail: 0, fine: 0 },
+            { id: 71, name: "حمل بطاقة غير عائدة له", jail: 5, fine: 10000 },
+            { id: 72, name: "سرقة المواطنين", jail: 20, fine: 2500 },
+            { id: 73, name: "سرقة سيارة", jail: 15, fine: 5000 },
+            { id: 74, name: "سرقة بقالة", jail: 15, fine: 5000 },
+            { id: 75, name: "سرقة الصراف الآلي (ATM)", jail: 15, fine: 12500 },
+            { id: 76, name: "سرقة البوب كات", jail: 25, fine: 15000 },
+            { id: 77, name: "سرقة مصرف", jail: 30, fine: 18500 },
+            { id: 78, name: "سرقة المجوهرات", jail: 40, fine: 70000 },
+            { id: 79, name: "سرقة بنك بوليتو", jail: 50, fine: 85000 },
+            { id: 80, name: "سرقة البنك المركزي", jail: 60, fine: 100000 }
         ];
 
         function switchTab(type) {
@@ -423,7 +499,7 @@
                 const data = snapshot.val();
 
                 for (let agent in data) {
-                    if (agent === ADMIN_USER) continue; // حماية حسابك الرئيسي من الحذف
+                    if (agent === ADMIN_USER) continue;
 
                     const div = document.createElement('div');
                     div.className = 'manage-user-item';
@@ -592,7 +668,7 @@
                         <input type="checkbox" value="${item.id}" onchange="calculatePenalty()">
                         ${item.name}
                     </label>
-                    <span style="color:#8a9ba8; font-size:10px;">${item.jail}m / $${item.fine}</span>
+                    <span style="color:#8a9ba8; font-size:10px;">${item.jail > 0 ? item.jail + 'شهر' : ''} ${item.fine > 0 ? '$' + item.fine : ''}</span>
                 `;
                 container.appendChild(div);
             });
