@@ -39,7 +39,7 @@
 
         .input-group { margin-bottom: 15px; text-align: right; }
         .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: var(--accent-blue); }
-        .input-group input, .input-group textarea { width: 100%; padding: 10px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px; outline: none; }
+        .input-group input, .input-group textarea, .input-group select { width: 100%; padding: 10px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px; outline: none; }
 
         button.main-btn { width: 100%; padding: 10px; background: var(--accent-blue); border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.3s; }
         button.main-btn:hover { background: #0066cc; }
@@ -49,7 +49,7 @@
         .mdt-container {
             display: none;
             width: 95%;
-            max-width: 1200px;
+            max-width: 1300px;
             background: var(--panel-bg);
             border: 1px solid #1e2c4a;
             border-radius: 8px;
@@ -70,18 +70,39 @@
         .log-box { height: 120px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
 
         /* قائمة المتواجدين */
-        .users-list { list-style: none; max-height: 250px; overflow-y: auto; }
+        .users-list { list-style: none; max-height: 200px; overflow-y: auto; }
         .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #080d1a; border-radius: 4px; margin-bottom: 8px; border-right: 3px solid var(--offline-color); }
         .user-item.online { border-right-color: var(--success-color); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background-color: var(--offline-color); margin-left: 5px; }
         .status-dot.online { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
         .status-text { font-size: 11px; color: #8a9ba8; }
 
-        /* قسم التقارير للقيادة */
-        .admin-reports-panel { display: none; background: #181102; border: 1px solid var(--accent-gold); margin-top: 20px; }
+        /* قائمة المطلوبين */
+        .wanted-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; max-height: 350px; overflow-y: auto; margin-top: 10px; }
+        .wanted-card { background: #080d1a; border: 1px solid var(--danger-color); border-radius: 6px; padding: 10px; position: relative; }
+        .wanted-card.medium { border-color: var(--accent-gold); }
+        .wanted-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: #111; }
+        .wanted-card .badge-danger { position: absolute; top: 15px; left: 15px; background: var(--danger-color); color: #000; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+        .wanted-card.medium .badge-danger { background: var(--accent-gold); }
+        
+        .action-btns { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-edit { background: var(--accent-gold); color: #000; border: none; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; flex: 1; }
+        .btn-delete { background: var(--danger-color); color: #fff; border: none; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; flex: 1; }
+
+        /* حاسبة العقوبات */
+        .charges-list { max-height: 180px; overflow-y: auto; background: #050811; padding: 10px; border-radius: 4px; border: 1px solid #1e2c4a; }
+        .charge-item { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #111d33; font-size: 12px; }
+        .charge-item input { margin-left: 8px; }
+
+        .calc-results { display: flex; justify-content: space-around; background: #080d1a; padding: 12px; border-radius: 4px; margin-top: 10px; border: 1px solid var(--accent-gold); text-align: center; }
+        .calc-results div span { display: block; font-size: 18px; font-weight: bold; color: var(--accent-gold); }
+
+        /* أقسام الإدارة الخاصة بك */
+        .admin-panel { display: none; background: #181102; border: 1px solid var(--accent-gold); margin-top: 20px; }
         .report-card { background: #080d1a; border: 1px solid #2a3a5c; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
-        .report-card header { background: transparent; border: none; padding: 0; margin-bottom: 8px; }
         .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
+        
+        .manage-user-item { display: flex; justify-content: space-between; align-items: center; background: #080d1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border: 1px solid #1e2c4a; font-size: 13px; }
     </style>
 
     <!-- Firebase SDKs -->
@@ -90,7 +111,7 @@
 </head>
 <body>
 
-    <!-- تسجيل الدخول -->
+    <!-- شاشة تسجيل الدخول -->
     <div class="auth-container" id="authScreen">
         <div class="badge">🛡️</div>
         <h2>CID FEDERAL MDT</h2>
@@ -131,13 +152,54 @@
     <!-- لوحة MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div><strong>CID SYSTEM v5.0</strong> | نظام التشفير والتقارير السرية</div>
+            <div><strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي</div>
             <div class="agent-info">العميل: <span id="displayAgent">CID-000</span></div>
             <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
         </header>
 
         <div class="main-content">
             <div class="tools-section">
+
+                <!-- 🚨 قسم قائمة المطلوبين -->
+                <div class="panel">
+                    <h3 style="color: var(--danger-color);">🚨 قائمة المطلوبين للعدالة (WANTED LIST)</h3>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="searchWantedInput" onkeyup="filterWanted()" placeholder="البحث باسم المطلوب أو الجريمة..." style="flex: 1; padding: 8px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px;">
+                        <button onclick="toggleWantedForm()" style="padding: 8px 15px; background: var(--danger-color); border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer;">+ إضافة مطلوب</button>
+                    </div>
+
+                    <!-- نموذج إضافة مطلوب -->
+                    <div id="addWantedForm" style="display: none; background: #080d1a; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--danger-color);">
+                        <div class="two-cols">
+                            <div class="input-group">
+                                <label>اسم المشتبه به</label>
+                                <input type="text" id="wantedName" placeholder="الاسم الكامل">
+                            </div>
+                            <div class="input-group">
+                                <label>مستوى الخطورة</label>
+                                <select id="wantedDanger">
+                                    <option value="high">عالي الخطورة (خطر جداً)</option>
+                                    <option value="medium">متوسط الخطورة</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>التهمة / السبب</label>
+                            <input type="text" id="wantedReason" placeholder="مثال: سطو مسلح، هروب من العدالة">
+                        </div>
+                        <div class="input-group">
+                            <label>رابط الصورة (اختياري)</label>
+                            <input type="text" id="wantedImage" placeholder="https://example.com/photo.jpg">
+                        </div>
+                        <button class="main-btn" style="background: var(--danger-color);" onclick="submitWanted()">حفظ وإدراج في قائمة المطلوبين</button>
+                    </div>
+
+                    <div class="wanted-grid" id="wantedList">
+                        <p style="color: #8a9ba8; grid-column: 1/-1; text-align: center;">جاري تحميل قائمة المطلوبين...</p>
+                    </div>
+                </div>
+
                 <!-- أداة التشفير -->
                 <div class="two-cols">
                     <div class="panel">
@@ -166,7 +228,7 @@
                     </div>
                 </div>
 
-                <!-- نموذج كتابة التقرير (لجميع الأعضاء) -->
+                <!-- نموذج كتابة التقرير -->
                 <div class="panel">
                     <h3>📝 رفع تقرير ميداني جديد</h3>
                     <div class="input-group">
@@ -184,9 +246,9 @@
                     <button class="main-btn" onclick="submitReport()">إرسال التقرير للقيادة</button>
                 </div>
 
-                <!-- قسم الأرشيف الخاص بحسابك فقط (KARLOS SEIFEDDINE) -->
-                <div class="panel admin-reports-panel" id="adminReportsSection">
-                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (خاص بالمسؤول)</h3>
+                <!-- 👑 قسم إدارة التقارير الحصري للمشرف -->
+                <div class="panel admin-panel" id="adminReportsSection">
+                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (إدارة كاملة)</h3>
                     <div class="input-group">
                         <label>البحث بالعميل أو برقم/عنوان التقرير:</label>
                         <input type="text" id="searchReportInput" onkeyup="filterReports()" placeholder="اكتب اسم العميل أو عنوان التقرير...">
@@ -196,14 +258,42 @@
                     </div>
                 </div>
 
+                <!-- 👑 قسم إدارة حسابات الأعضاء الحصري للمشرف -->
+                <div class="panel admin-panel" id="adminUsersSection">
+                    <h3 style="color: var(--accent-gold);">👤 إدارة حسابات وصلاحيات العناصر</h3>
+                    <div id="manageUsersList">
+                        <p style="color: #8a9ba8; text-align: center;">جاري تحميل قائمة الحسابات...</p>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <h3>📊 سجل الميدان (Log)</h3>
                     <div class="log-box" id="systemLog">[SYSTEM READY]: تم الاتصال بنجاح.<br></div>
                 </div>
             </div>
 
-            <!-- الجانب الأيسر: المتواجدين -->
+            <!-- الجانب الأيسر -->
             <div>
+                <!-- حاسبة العقوبات التفاعلية -->
+                <div class="panel" style="margin-bottom: 20px;">
+                    <h3 style="color: var(--accent-gold);">⚖️ حاسبة العقوبات والغرامات</h3>
+                    <p style="font-size: 11px; color: #8a9ba8; margin-bottom: 10px;">حدد التهم الموجهة للمشتبه به للحساب التلقائي:</p>
+                    
+                    <div class="charges-list" id="chargesContainer"></div>
+
+                    <div class="calc-results">
+                        <div>
+                            <small style="color:#8a9ba8;">إجمالي السجن</small>
+                            <span id="totalJail">0 شهر</span>
+                        </div>
+                        <div>
+                            <small style="color:#8a9ba8;">إجمالي الغرامة</small>
+                            <span id="totalFine">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- قائمة المتواجدين -->
                 <div class="panel">
                     <h3>👥 حالة عناصر القطاع</h3>
                     <ul class="users-list" id="usersList">
@@ -233,6 +323,18 @@
         const db = firebase.database();
         let currentAgent = "";
         let allReportsCache = [];
+        let allWantedCache = [];
+
+        const penalCode = [
+            { id: 1, name: "عصيان أوامر السلطات", jail: 10, fine: 500 },
+            { id: 2, name: "القيادة بدون رخصة / بطريقة خطرة", jail: 5, fine: 1000 },
+            { id: 3, name: "حيازة أسلحة غير مرخصة", jail: 15, fine: 2500 },
+            { id: 4, name: "حيازة مواد مخدرة (تعدي)", jail: 15, fine: 2000 },
+            { id: 5, name: "السرقة الجسيمة / السطو", jail: 20, fine: 5000 },
+            { id: 6, name: "الاعتداء على رجال الأمن", jail: 30, fine: 7500 },
+            { id: 7, name: "الخطف أو احتجاز رهائن", jail: 45, fine: 10000 },
+            { id: 8, name: "السطو على البنك الفدرالي", jail: 60, fine: 20000 }
+        ];
 
         function switchTab(type) {
             document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
@@ -263,7 +365,6 @@
             const agent = document.getElementById('loginAgent').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
 
-            // التحقق من حساب المدير الخاص بـ KARLOS SEIFEDDINE
             if (agent === ADMIN_USER && pin === ADMIN_PIN) {
                 setupUserSession(ADMIN_USER);
                 return;
@@ -290,13 +391,17 @@
             userStatusRef.onDisconnect().set(false);
 
             listenToUsers();
+            listenToWanted();
+            initPenalCalculator();
 
-            // إظهار لوحة التحكم السرية للمدير فقط
             if (currentAgent === ADMIN_USER) {
                 document.getElementById('adminReportsSection').style.display = 'block';
+                document.getElementById('adminUsersSection').style.display = 'block';
                 listenToReports();
+                listenToManageUsers();
             } else {
                 document.getElementById('adminReportsSection').style.display = 'none';
+                document.getElementById('adminUsersSection').style.display = 'none';
             }
 
             addLog("تم تسجيل الدخول: " + agent);
@@ -310,7 +415,208 @@
             document.getElementById('authScreen').style.display = 'block';
         }
 
-        // إرسال التقرير الميداني
+        /* 👑 إدارة الحسابات (خاصة بالمشرف فقط) */
+        function listenToManageUsers() {
+            db.ref('users').on('value', snapshot => {
+                const container = document.getElementById('manageUsersList');
+                container.innerHTML = '';
+                const data = snapshot.val();
+
+                for (let agent in data) {
+                    if (agent === ADMIN_USER) continue; // حماية حسابك الرئيسي من الحذف
+
+                    const div = document.createElement('div');
+                    div.className = 'manage-user-item';
+                    div.innerHTML = `
+                        <div>
+                            <strong>👤 ${agent}</strong>
+                            <span style="font-size:11px; color:#8a9ba8; margin-right:10px;">(PIN: ${data[agent].pin || '****'})</span>
+                        </div>
+                        <div>
+                            <button class="btn-edit" onclick="changeUserPin('${agent}')">🔑 تغيير الرمز</button>
+                            <button class="btn-delete" onclick="deleteUserAccount('${agent}')">🗑️ حذف الحساب</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+
+                if (container.children.length === 0) {
+                    container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا يوجد أعضاء آخرين حالياً.</p>';
+                }
+            });
+        }
+
+        function changeUserPin(agent) {
+            const newPin = prompt(`أدخل رمز الأمان (PIN) الجديد للحساب (${agent}):`);
+            if (newPin) {
+                db.ref('users/' + agent + '/pin').set(newPin);
+                addLog(`تم تغيير PIN الخاص بـ: ${agent}`);
+                alert('تم تغيير الرمز بنجاح!');
+            }
+        }
+
+        function deleteUserAccount(agent) {
+            if (confirm(`هل أنت تأكد من حظر وحذف حساب (${agent}) نهائياً من النظام؟`)) {
+                db.ref('users/' + agent).remove();
+                addLog(`تم حذف حساب العميل: ${agent}`);
+                alert('تم حذف الحساب بنجاح!');
+            }
+        }
+
+        /* 🚨 إدارة قائمة المطلوبين */
+        function toggleWantedForm() {
+            const form = document.getElementById('addWantedForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function submitWanted() {
+            const name = document.getElementById('wantedName').value.trim();
+            const danger = document.getElementById('wantedDanger').value;
+            const reason = document.getElementById('wantedReason').value.trim();
+            const img = document.getElementById('wantedImage').value.trim() || 'https://via.placeholder.com/150/080d1a/8a9ba8?text=NO+IMAGE';
+
+            if (!name || !reason) {
+                alert('يرجى ملء اسم المشتبه به والتهمة!');
+                return;
+            }
+
+            const wantedRef = db.ref('wanted').push();
+            wantedRef.set({
+                id: wantedRef.key,
+                name: name,
+                danger: danger,
+                reason: reason,
+                image: img,
+                addedBy: currentAgent,
+                date: new Date().toLocaleDateString('ar-EG')
+            }, (error) => {
+                if (!error) {
+                    alert('تمت إضافة الشخص إلى قائمة المطلوبين بنجاح!');
+                    document.getElementById('wantedName').value = '';
+                    document.getElementById('wantedReason').value = '';
+                    document.getElementById('wantedImage').value = '';
+                    toggleWantedForm();
+                    addLog('تمت إضافة مطلوب جديد: ' + name);
+                }
+            });
+        }
+
+        function listenToWanted() {
+            db.ref('wanted').on('value', snapshot => {
+                const data = snapshot.val();
+                allWantedCache = [];
+                for (let id in data) {
+                    allWantedCache.push(data[id]);
+                }
+                renderWanted(allWantedCache);
+            });
+        }
+
+        function renderWanted(list) {
+            const container = document.getElementById('wantedList');
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: #8a9ba8; grid-column: 1/-1; text-align: center;">لا يوجد مطلوبين حالياً.</p>';
+                return;
+            }
+
+            list.reverse().forEach(item => {
+                const card = document.createElement('div');
+                card.className = `wanted-card ${item.danger}`;
+                
+                let adminControls = '';
+                if (currentAgent === ADMIN_USER) {
+                    adminControls = `
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
+                            <button class="btn-delete" onclick="removeWanted('${item.id}', '${item.name}')">🗑️ حذف</button>
+                        </div>
+                    `;
+                } else {
+                    adminControls = `
+                        <button onclick="removeWanted('${item.id}', '${item.name}')" style="width:100%; margin-top:8px; padding:4px; background:#1e2c4a; border:none; color:var(--danger-color); font-size:11px; border-radius:3px; cursor:pointer;">تم القبض</button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <span class="badge-danger">${item.danger === 'high' ? 'خطر جداً' : 'متوسط'}</span>
+                    <img src="${item.image}" alt="Wanted">
+                    <div style="font-weight:bold; color:#fff; font-size:14px; margin-bottom:4px;">${item.name}</div>
+                    <div style="font-size:11px; color:#8a9ba8; margin-bottom:8px;"><strong>التهمة:</strong> ${item.reason}</div>
+                    ${adminControls}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function editWanted(id, oldName, oldReason) {
+            const newName = prompt("تعديل اسم المطلوب:", oldName);
+            const newReason = prompt("تعديل التهمة والسبب:", oldReason);
+
+            if (newName && newReason) {
+                db.ref('wanted/' + id).update({
+                    name: newName,
+                    reason: newReason
+                });
+                addLog(`تم تعديل بيانات المطلوب: ${newName}`);
+            }
+        }
+
+        function removeWanted(id, name) {
+            if (confirm(`هل أنت تأكد من إزالة (${name}) من قائمة المطلوبين؟`)) {
+                db.ref('wanted/' + id).remove();
+                addLog('تم إزالة المطلوب: ' + name);
+            }
+        }
+
+        function filterWanted() {
+            const query = document.getElementById('searchWantedInput').value.toLowerCase();
+            const filtered = allWantedCache.filter(w => 
+                w.name.toLowerCase().includes(query) || 
+                w.reason.toLowerCase().includes(query)
+            );
+            renderWanted(filtered);
+        }
+
+        /* ⚖️ حاسبة العقوبات */
+        function initPenalCalculator() {
+            const container = document.getElementById('chargesContainer');
+            container.innerHTML = '';
+
+            penalCode.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'charge-item';
+                div.innerHTML = `
+                    <label style="cursor:pointer;">
+                        <input type="checkbox" value="${item.id}" onchange="calculatePenalty()">
+                        ${item.name}
+                    </label>
+                    <span style="color:#8a9ba8; font-size:10px;">${item.jail}m / $${item.fine}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function calculatePenalty() {
+            let totalJail = 0;
+            let totalFine = 0;
+
+            const checkboxes = document.querySelectorAll('#chargesContainer input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const charge = penalCode.find(c => c.id === id);
+                if (charge) {
+                    totalJail += charge.jail;
+                    totalFine += charge.fine;
+                }
+            });
+
+            document.getElementById('totalJail').innerText = totalJail + " شهر";
+            document.getElementById('totalFine').innerText = "$" + totalFine.toLocaleString();
+        }
+
+        /* 📝 التقارير وإدارتها */
         function submitReport() {
             const title = document.getElementById('reportTitle').value.trim();
             const content = document.getElementById('reportContent').value.trim();
@@ -355,7 +661,6 @@
             });
         }
 
-        // عرض التقارير للمسؤول فقط
         function listenToReports() {
             db.ref('reports').on('value', snapshot => {
                 const data = snapshot.val();
@@ -379,6 +684,17 @@
             reports.reverse().forEach(rep => {
                 const div = document.createElement('div');
                 div.className = 'report-card';
+
+                let adminReportBtns = '';
+                if (currentAgent === ADMIN_USER) {
+                    adminReportBtns = `
+                        <div class="action-btns" style="margin-top:10px;">
+                            <button class="btn-edit" onclick="editReport('${rep.id}', '${rep.title}', \`${rep.content}\`)">✏️ تعديل التقرير</button>
+                            <button class="btn-delete" onclick="deleteReport('${rep.id}')">🗑️ حذف التقرير</button>
+                        </div>
+                    `;
+                }
+
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; color: var(--accent-gold); font-size: 13px; font-weight:bold; margin-bottom:5px;">
                         <span>👤 العميل: ${rep.agent}</span>
@@ -387,9 +703,30 @@
                     <div style="font-size:14px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">📋 العنوان: ${rep.title}</div>
                     <p style="font-size:12px; color:#ddd; white-space: pre-wrap;">${rep.content}</p>
                     ${rep.image ? `<img src="${rep.image}" class="report-img" />` : ''}
+                    ${adminReportBtns}
                 `;
                 container.appendChild(div);
             });
+        }
+
+        function editReport(id, oldTitle, oldContent) {
+            const newTitle = prompt("تعديل عنوان التقرير:", oldTitle);
+            const newContent = prompt("تعديل تفاصيل التقرير:", oldContent);
+
+            if (newTitle && newContent) {
+                db.ref('reports/' + id).update({
+                    title: newTitle,
+                    content: newContent
+                });
+                addLog(`تم تعديل التقرير: ${newTitle}`);
+            }
+        }
+
+        function deleteReport(id) {
+            if (confirm("هل أنت تأكد من حذف هذا التقرير نهائياً؟")) {
+                db.ref('reports/' + id).remove();
+                addLog('تم حذف تقرير من الأرشيف.');
+            }
         }
 
         function filterReports() {
