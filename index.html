@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CID - Mobile Data Terminal (MDT)</title>
+    <style>
+        :root {
+            --bg-color: #0a0f1d;
+            --panel-bg: #121a2d;
+            --accent-blue: #0088ff;
+            --accent-gold: #d4af37;
+            --text-color: #e0e6ed;
+            --danger-color: #ff4d4d;
+            --success-color: #00e676;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* شاشة تسجيل الدخول */
+        .login-container {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--accent-blue);
+            box-shadow: 0 0 20px rgba(0, 136, 255, 0.2);
+            width: 350px;
+            text-align: center;
+        }
+
+        .badge {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .login-container h2 {
+            color: var(--accent-gold);
+            margin-bottom: 5px;
+        }
+
+        .login-container p {
+            font-size: 12px;
+            color: #8a9ba8;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: var(--accent-blue);
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: #080d1a;
+            border: 1px solid #1e2c4a;
+            color: #fff;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--accent-blue);
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent-blue);
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #0066cc;
+        }
+
+        /* لوحة التحكم MDT */
+        .mdt-container {
+            display: none;
+            width: 90%;
+            max-width: 1000px;
+            background: var(--panel-bg);
+            border: 1px solid #1e2c4a;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        header {
+            background: #080d1a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .agent-info {
+            font-size: 14px;
+        }
+
+        .agent-info span {
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .panel {
+            background: #0d1526;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #1e2c4a;
+        }
+
+        .panel h3 {
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #1e2c4a;
+            padding-bottom: 5px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background: #cc0000;
+        }
+
+        .log-box {
+            height: 150px;
+            background: #050811;
+            border: 1px solid #1e2c4a;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            color: var(--success-color);
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .error-msg {
+            color: var(--danger-color);
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- واجهة تسجيل الدخول -->
+    <div class="login-container" id="loginScreen">
+        <div class="badge">🛡️</div>
+        <h2>CID FEDERAL MDT</h2>
+        <p>CRIMINAL INVESTIGATION DIVISION</p>
+        
+        <div class="input-group">
+            <label>معرّف العميل (Agent ID)</label>
+            <input type="text" id="agentId" placeholder="مثال: CID-402">
+        </div>
+        
+        <div class="input-group">
+            <label>رمز الأمان (PIN Code)</label>
+            <input type="password" id="pinCode" placeholder="••••">
+        </div>
+        
+        <button onclick="login()">تسجيل الدخول للنظام</button>
+        <div class="error-msg" id="loginError">بيانات الدخول غير صحيحة!</div>
+    </div>
+
+    <!-- واجهة الـ MDT الرئيسية -->
+    <div class="mdt-container" id="mdtScreen">
+        <header>
+            <div>
+                <strong>CID SYSTEM v4.2</strong> | نظام التشفير الميداني
+            </div>
+            <div class="agent-info">
+                العميل: <span id="displayAgent">CID-000</span> | الحالة: <span style="color: var(--success-color);">متصل</span>
+            </div>
+            <button onclick="logout()" style="width: auto; padding: 5px 15px; background: #333;">خروج</button>
+        </header>
+
+        <div class="main-content">
+            <!-- وحدة التشفير -->
+            <div class="panel">
+                <h3>🔒 تشفير رسالة ميدانية</h3>
+                <div class="input-group">
+                    <label>الرسالة العادية</label>
+                    <textarea id="plainText" rows="4" placeholder="أدخل النص المراد تشفيره..."></textarea>
+                </div>
+                <button onclick="encryptMessage()">تشفير البيانات</button>
+            </div>
+
+            <!-- وحدة فك التشفير -->
+            <div class="panel">
+                <h3>🔓 فك تشفير رسالة</h3>
+                <div class="input-group">
+                    <label>الرمز المُشفّر</label>
+                    <textarea id="cipherInput" rows="4" placeholder="أدخل الكود المُشفّر هنا..."></textarea>
+                </div>
+                <button onclick="decryptMessage()" style="background: var(--accent-gold); color: #000;">فك التشفير</button>
+            </div>
+
+            <!-- النتيجة والسجلات -->
+            <div class="panel full-width">
+                <h3>📊 النتيجة وسجل العمليات (System Audit Log)</h3>
+                <div class="input-group">
+                    <label>النتيجة الحالية:</label>
+                    <input type="text" id="resultOutput" readonly placeholder="ستظهر النتيجة هنا..." style="color: var(--accent-gold); font-weight: bold;">
+                </div>
+                <div class="log-box" id="systemLog">
+                    [SYSTEM READY]: تم تشغيل نظام التشفير الفدرالي...<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // بيانات الدخول الافتراضية
+        const VALID_AGENT = "CID-100";
+        const VALID_PIN = "9900";
+
+        function login() {
+            const agent = document.getElementById('agentId').value;
+            const pin = document.getElementById('pinCode').value;
+            const errorMsg = document.getElementById('loginError');
+
+            if (agent === VALID_AGENT && pin === VALID_PIN) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mdtScreen').style.display = 'block';
+                document.getElementById('displayAgent').innerText = agent;
+                addLog("تم تسجيل الدخول بنجاح بواسطة: " + agent);
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function logout() {
+            document.getElementById('mdtScreen').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('pinCode').value = '';
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        // تشفير الرسالة (Base64)
+        function encryptMessage() {
+            const input = document.getElementById('plainText').value;
+            if (!input) return;
+
+            // استخدام btoa للتشفير ودعم اللغة العربية
+            const encoded = btoa(unescape(encodeURIComponent(input)));
+            const formattedResult = `CID-SEC-${encoded}`;
+            
+            document.getElementById('resultOutput').value = formattedResult;
+            addLog(`[تشفير]: تم تشفير نص بطول ${input.length} حرف.`);
+        }
+
+        // فك تشفير الرسالة
+        function decryptMessage() {
+            let input = document.getElementById('cipherInput').value.trim();
+            if (!input) return;
+
+            // إزالة البادئة إذا كانت موجودة
+            if (input.startsWith("CID-SEC-")) {
+                input = input.replace("CID-SEC-", "");
+            }
+
+            try {
+                const decoded = decodeURIComponent(escape(atob(input)));
+                document.getElementById('resultOutput').value = decoded;
+                addLog(`[فك تشفير]: تم فك تشفير الرسالة بنجاح.`);
+            } catch (e) {
+                document.getElementById('resultOutput').value = "❌ خطأ: كود التشفير غير صالح!";
+                addLog(`[خطأ]: محاولة فك تشفير رمز غير صالح.`);
+            }
+        }
+
+        // إضافة سجل للنظام
+        function addLog(message) {
+            const logBox = document.getElementById('systemLog');
+            const timestamp = new Date().toLocaleTimeString('ar-EG');
+            logBox.innerHTML += `[${timestamp}] ${message}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
