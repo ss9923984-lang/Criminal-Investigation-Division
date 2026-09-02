@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CID - Mobile Data Terminal (MDT)</title>
+    
+    <!-- Leaflet CSS الخريطة التفاعلية -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
         :root {
             --bg-color: #0a0f1d;
@@ -64,7 +68,7 @@
         .mdt-container {
             display: none;
             width: 95%;
-            max-width: 1300px;
+            max-width: 1400px;
             background: rgba(18, 26, 45, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid #1e2c4a;
@@ -76,7 +80,7 @@
         header { background: #080d1a; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-gold); }
         .agent-info span { color: var(--accent-gold); font-weight: bold; }
 
-        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; }
+        .main-content { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; padding: 20px; }
         .tools-section { display: flex; flex-direction: column; gap: 20px; }
         .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
@@ -84,6 +88,12 @@
         .panel h3 { color: var(--accent-blue); margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #1e2c4a; padding-bottom: 5px; }
 
         .log-box { height: 120px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
+
+        /* الخريطة والتخطيط التكتيكي */
+        #map { width: 100%; height: 450px; border-radius: 6px; border: 1px solid var(--accent-blue); background: #050811; }
+        .map-controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .map-btn { padding: 6px 12px; background: #080d1a; border: 1px solid var(--accent-blue); color: #fff; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .map-btn.active { background: var(--accent-blue); }
 
         /* قائمة المتواجدين */
         .users-list { list-style: none; max-height: 200px; overflow-y: auto; }
@@ -125,9 +135,10 @@
         .role-agent { background: #333; color: #fff; }
     </style>
 
-    <!-- Firebase SDKs -->
+    <!-- Firebase & Leaflet JS -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <!-- شاشة تسجيل الدخول -->
@@ -173,7 +184,7 @@
         <header>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <img src="Gemini_Generated_Image_dvb7ntdvb7ntdvb7.jfif" alt="Logo" style="height: 30px; object-fit: contain;">
-                <span><strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي</span>
+                <span><strong>CID SYSTEM v6.5</strong> | نظام التحكم والتخطيط الميداني</span>
             </div>
             <div class="agent-info">العميل: <span id="displayAgent">CID-000</span></div>
             <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
@@ -181,6 +192,24 @@
 
         <div class="main-content">
             <div class="tools-section">
+
+                <!-- 🗺️ قسم الخريطة التكتيكية والتخطيط للمداهمات -->
+                <div class="panel">
+                    <h3 style="color: var(--accent-gold);">🗺️ الخريطة التكتيكية وتخطيط المداهمات (GTA V MAP)</h3>
+                    
+                    <div class="map-controls">
+                        <button class="map-btn active" id="btnMode2D" onclick="setMapMode('2D')">🌐 عرض 2D عادي</button>
+                        <button class="map-btn" id="btnMode3D" onclick="setMapMode('3D')">🏢 عرض 3D مجسم</button>
+                        <span style="border-left: 1px solid #1e2c4a; margin: 0 5px;"></span>
+                        <button class="map-btn" style="border-color: #00e676;" onclick="setDrawTool('police')">🔵 موقع فرقة</button>
+                        <button class="map-btn" style="border-color: var(--danger-color);" onclick="setDrawTool('suspect')">🔴 هدف / تهديد</button>
+                        <button class="map-btn" style="border-color: var(--accent-gold);" onclick="setDrawTool('path')">✏️ رسم مسار اقتحام</button>
+                        <button class="map-btn" style="background: #333;" onclick="clearTacticalMap()">🗑️ مسح المخطط</button>
+                    </div>
+
+                    <div id="map"></div>
+                </div>
+
                 <!-- 🚨 قسم قائمة المطلوبين -->
                 <div class="panel">
                     <h3 style="color: var(--danger-color);">🚨 قائمة المطلوبين للعدالة (WANTED LIST)</h3>
@@ -190,7 +219,6 @@
                         <button onclick="toggleWantedForm()" style="padding: 8px 15px; background: var(--danger-color); border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer;">+ إضافة مطلوب</button>
                     </div>
 
-                    <!-- نموذج إضافة مطلوب -->
                     <div id="addWantedForm" style="display: none; background: #080d1a; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--danger-color);">
                         <div class="two-cols">
                             <div class="input-group">
@@ -254,7 +282,7 @@
                     <h3>📝 رفع تقرير ميداني جديد</h3>
                     <div class="input-group">
                         <label>عنوان / اسم التقرير</label>
-                        <input type="text" id="reportTitle" placeholder="مثال: تقرير قضية سرقة 104">
+                        <input type="text" id="reportTitle" placeholder="مثال: تقرير مداهمة مصنع الأسلحة">
                     </div>
                     <div class="input-group">
                         <label>تفاصيل التقرير</label>
@@ -343,83 +371,27 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentAgent = "";
-        let currentUserRole = "agent"; // الصلاحيات المتاحة: "admin", "report_manager", "agent"
+        let currentUserRole = "agent";
         let allReportsCache = [];
         let allWantedCache = [];
 
-        // قائمة المخالفات والعقوبات
+        /* إعدادات الخريطة */
+        let map, mapLayer2D, mapLayer3D;
+        let currentMapMode = '2D';
+        let currentTool = null;
+        let mapMarkers = [];
+        let mapLines = [];
+        let activeLinePoints = [];
+
         const penalCode = [
             { id: 4, name: "قطع الاشارة", jail: 0, fine: 1500 },
             { id: 5, name: "تجاوز السرعة", jail: 0, fine: 2000 },
-            { id: 6, name: "وقوف خاطئ", jail: 0, fine: 1000 },
-            { id: 7, name: "عكس السير", jail: 0, fine: 1000 },
-            { id: 8, name: "الالتفاف بشكل خاطئ", jail: 0, fine: 500 },
-            { id: 9, name: "القيادة المتهورة", jail: 0, fine: 2000 },
-            { id: 10, name: "عدم استخدام إشارة المركبة", jail: 0, fine: 600 },
-            { id: 11, name: "عدم حمل هوية", jail: 10, fine: 5000 },
-            { id: 12, name: "عدم حمل رخصة قيادة", jail: 5, fine: 5000 },
-            { id: 13, name: "القيادة تحت تأثير المسكرات", jail: 0, fine: 1050 },
-            { id: 14, name: "عدم الالتزام بالمركبة + تعريض حياة المواطنين للخطر", jail: 0, fine: 2500 },
-            { id: 15, name: "السباقات غير القانونية", jail: 0, fine: 8000 },
-            { id: 16, name: "الترفيع بالدراجة النارية", jail: 0, fine: 1500 },
-            { id: 17, name: "تدمير ممتلكات الدولة", jail: 0, fine: 300 },
             { id: 18, name: "الهروب من الشرطة", jail: 25, fine: 4000 },
-            { id: 20, name: "التسول", jail: 20, fine: 0 },
-            { id: 21, name: "مخالفة ذوق عام", jail: 20, fine: 2500 },
-            { id: 22, name: "إزعاج المواطنين", jail: 10, fine: 1050 },
-            { id: 23, name: "إزعاج السلطات", jail: 25, fine: 2100 },
-            { id: 24, name: "استهزاء برجال الأمن", jail: 30, fine: 10000 },
             { id: 25, name: "عدم الانصياع إلى أوامر الشرطة", jail: 25, fine: 6000 },
-            { id: 26, name: "بلاغ كاذب", jail: 15, fine: 6000 },
-            { id: 27, name: "التدخل بشؤون الشرطة", jail: 5, fine: 10000 },
-            { id: 28, name: "تحرش", jail: 20, fine: 2500 },
             { id: 29, name: "إهانة رجل أمن", jail: 40, fine: 10000 },
-            { id: 30, name: "محاولة الرشوة", jail: 20, fine: 3500 },
-            { id: 31, name: "الرشوة", jail: 30, fine: 5000 },
-            { id: 32, name: "شهادة الزور", jail: 0, fine: 5000 },
-            { id: 33, name: "الابتزاز", jail: 10, fine: 10000 },
-            { id: 34, name: "عدم الإلتزام بأدوات السلامة", jail: 0, fine: 600 },
-            { id: 35, name: "المقاومة أثناء الإعتقال", jail: 15, fine: 3500 },
-            { id: 36, name: "عدم إحترام المحامي", jail: 50, fine: 10000 },
-            { id: 37, name: "الاشتباك بالأيادي", jail: 10, fine: 2500 },
-            { id: 38, name: "إنتحال الشخصية", jail: 20, fine: 12500 },
-            { id: 40, name: "التجارة بالسلاح من الدرجة الأولى", jail: 10, fine: 10000 },
-            { id: 41, name: "التجارة بالسلاح من الدرجة الثانية", jail: 20, fine: 20000 },
-            { id: 42, name: "التجارة بالسلاح من الدرجة الثالثة", jail: 30, fine: 40000 },
-            { id: 43, name: "سلاح غير ترخيص", jail: 45, fine: 3500 },
             { id: 44, name: "سلاح غير قانوني - السلاح الثقيل", jail: 60, fine: 5000 },
-            { id: 45, name: "إخراج سلاح", jail: 20, fine: 1500 },
-            { id: 46, name: "حمل (Grabbler)", jail: 75, fine: 50000 },
-            { id: 48, name: "إسقاط مواطن", jail: 20, fine: 5000 },
-            { id: 49, name: "إسقاط بلا عمد", jail: 15, fine: 1500 },
-            { id: 50, name: "محاولة إسقاط مواطن", jail: 15, fine: 3000 },
-            { id: 51, name: "إصابة شرطي", jail: 25, fine: 10000 },
-            { id: 52, name: "محاولة إصابة شرطي", jail: 15, fine: 5000 },
-            { id: 54, name: "ترويج مخدرات من الدرجة الأولى", jail: 10, fine: 5000 },
-            { id: 55, name: "ترويج مخدرات من الدرجة الثانية", jail: 15, fine: 10000 },
-            { id: 56, name: "حيازة مخدرات", jail: 15, fine: 3000 },
-            { id: 57, name: "تجارة الممنوعات", jail: 20, fine: 3500 },
-            { id: 58, name: "حيازة الممنوعات من الدرجة الأولى", jail: 17, fine: 1000 },
-            { id: 59, name: "حيازة الممنوعات من الدرجة الثانية", jail: 18, fine: 2500 },
-            { id: 60, name: "حيازة الممنوعات من الدرجة الثالثة", jail: 19, fine: 10000 },
-            { id: 62, name: "الدخول للمنشآت العسكرية", jail: 10, fine: 18500 },
-            { id: 63, name: "إطلاق أعيرة نارية", jail: 15, fine: 7500 },
-            { id: 64, name: "محاولة اختطاف", jail: 20, fine: 3500 },
             { id: 65, name: "اختطاف", jail: 30, fine: 5000 },
-            { id: 66, name: "اختطاف رجل الدولة", jail: 35, fine: 10000 },
-            { id: 67, name: "قتال الشوارع", jail: 20, fine: 7500 },
-            { id: 68, name: "محاولة تهريب مجرم", jail: 0, fine: 5000 },
-            { id: 69, name: "تهريب مجرم", jail: 0, fine: 10000 },
-            { id: 70, name: "الهروب من السجن", jail: 0, fine: 0 },
-            { id: 71, name: "حمل بطاقة غير عائدة له", jail: 5, fine: 10000 },
-            { id: 72, name: "سرقة المواطنين", jail: 20, fine: 2500 },
-            { id: 73, name: "سرقة سيارة", jail: 15, fine: 5000 },
-            { id: 74, name: "سرقة بقالة", jail: 15, fine: 5000 },
-            { id: 75, name: "سرقة الصراف الآلي (ATM)", jail: 15, fine: 12500 },
-            { id: 76, name: "سرقة البوب كات", jail: 25, fine: 15000 },
             { id: 77, name: "سرقة مصرف", jail: 30, fine: 18500 },
-            { id: 78, name: "سرقة المجوهرات", jail: 40, fine: 70000 },
-            { id: 79, name: "سرقة بنك بوليتو", jail: 50, fine: 85000 },
             { id: 80, name: "سرقة البنك المركزي", jail: 60, fine: 100000 }
         ];
 
@@ -482,10 +454,8 @@
             listenToUsers();
             listenToWanted();
             initPenalCalculator();
+            initTacticalMap(); // تهيئة الخريطة
 
-            // إظهار لوحة التحكم حسب الصلاحية:
-            // 1. المدير العام (admin) يرى كل شيء
-            // 2. مشرف التقارير (report_manager) يرى قسم التقارير فقط
             if (currentUserRole === 'admin') {
                 document.getElementById('adminReportsSection').style.display = 'block';
                 document.getElementById('adminUsersSection').style.display = 'block';
@@ -517,7 +487,80 @@
             document.getElementById('authScreen').style.display = 'block';
         }
 
-        /* 👑 إدارة الحسابات وتعيين الصلاحيات (خاصة بك أنت فقط كمدير عام) */
+        /* 🗺️ محرك الخريطة والتخطيط التكتيكي GTA V */
+        function initTacticalMap() {
+            if (map) return; // منع التكرار
+
+            map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 2
+            });
+
+            // إحداثيات وصور خريطة GTA V (Atlas / 3D Render)
+            const bounds = [[0, 0], [1000, 1000]];
+
+            mapLayer2D = L.imageOverlay('https://raw.githubusercontent.com/skylinelined/GTA-V-Map-Tiles/master/atlas.png', bounds);
+            mapLayer3D = L.imageOverlay('https://raw.githubusercontent.com/skylinelined/GTA-V-Map-Tiles/master/grid.png', bounds);
+
+            mapLayer2D.addTo(map);
+            map.fitBounds(bounds);
+
+            // الاستماع لنقر الخريطة لإنشاء النقاط والرسومات التكتيكية
+            map.on('click', function(e) {
+                if (!currentTool) return;
+
+                if (currentTool === 'police') {
+                    let marker = L.circleMarker(e.latlng, { color: '#0088ff', radius: 10, fillColor: '#0088ff', fillOpacity: 0.8 }).addTo(map);
+                    marker.bindPopup("<b>وحدة أمنية (Alpha)</b>").openPopup();
+                    mapMarkers.push(marker);
+                    addLog("تم تحديد موقع قوة أمنية على الخريطة.");
+                } else if (currentTool === 'suspect') {
+                    let marker = L.circleMarker(e.latlng, { color: '#ff4d4d', radius: 10, fillColor: '#ff4d4d', fillOpacity: 0.8 }).addTo(map);
+                    marker.bindPopup("<b>تهديد / هدف محدد</b>").openPopup();
+                    mapMarkers.push(marker);
+                    addLog("تم تحديد هدف على الخريطة.");
+                } else if (currentTool === 'path') {
+                    activeLinePoints.push(e.latlng);
+                    if (activeLinePoints.length > 1) {
+                        let line = L.polyline(activeLinePoints, { color: '#d4af37', weight: 4, dashArray: '5, 10' }).addTo(map);
+                        mapLines.push(line);
+                        addLog("تم رسم مسار اقتحام تكتيكي.");
+                    }
+                }
+            });
+        }
+
+        function setMapMode(mode) {
+            currentMapMode = mode;
+            document.getElementById('btnMode2D').classList.toggle('active', mode === '2D');
+            document.getElementById('btnMode3D').classList.toggle('active', mode === '3D');
+
+            if (mode === '2D') {
+                map.removeLayer(mapLayer3D);
+                mapLayer2D.addTo(map);
+            } else {
+                map.removeLayer(mapLayer2D);
+                mapLayer3D.addTo(map);
+            }
+        }
+
+        function setDrawTool(tool) {
+            currentTool = tool;
+            if (tool !== 'path') activeLinePoints = [];
+            addLog(`أداة التخطيط النشطة: ${tool}`);
+        }
+
+        function clearTacticalMap() {
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapLines.forEach(l => map.removeLayer(l));
+            mapMarkers = [];
+            mapLines = [];
+            activeLinePoints = [];
+            addLog("تم مسح جميع المخططات التكتيكية من الخريطة.");
+        }
+
+        /* 👑 إدارة الحسابات والصلاحيات */
         function listenToManageUsers() {
             db.ref('users').on('value', snapshot => {
                 const container = document.getElementById('manageUsersList');
@@ -548,42 +591,33 @@
                     `;
                     container.appendChild(div);
                 }
-
-                if (container.children.length === 0) {
-                    container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا يوجد أعضاء آخرين حالياً.</p>';
-                }
             });
         }
 
         function toggleUserRole(agent, currentRole) {
             const newRole = currentRole === 'report_manager' ? 'agent' : 'report_manager';
-            const actionText = newRole === 'report_manager' ? 'ترقية العميل إلى مشرف تقارير (يمكنه حذف وتعديل التقارير)' : 'تنزيل رتبة العميل إلى عميل عادي';
-            
-            if (confirm(`هل أنت تأكد من ${actionText} بالحساب (${agent})؟`)) {
+            if (confirm(`هل أنت تأكد من تغيير رتبة (${agent})؟`)) {
                 db.ref('users/' + agent + '/role').set(newRole);
-                addLog(`تم تغيير صلاحية العميل ${agent} إلى: ${newRole}`);
-                alert('تم تعديل الصلاحية بنجاح!');
+                addLog(`تم تعديل صلاحية العميل ${agent} إلى: ${newRole}`);
             }
         }
 
         function changeUserPin(agent) {
-            const newPin = prompt(`أدخل رمز الأمان (PIN) الجديد للحساب (${agent}):`);
+            const newPin = prompt(`أدخل PIN الجديد للحساب (${agent}):`);
             if (newPin) {
                 db.ref('users/' + agent + '/pin').set(newPin);
                 addLog(`تم تغيير PIN الخاص بـ: ${agent}`);
-                alert('تم تغيير الرمز بنجاح!');
             }
         }
 
         function deleteUserAccount(agent) {
-            if (confirm(`هل أنت تأكد من حظر وحذف حساب (${agent}) نهائياً من النظام؟`)) {
+            if (confirm(`هل أنت تأكد من حذف حساب (${agent}) نهائياً؟`)) {
                 db.ref('users/' + agent).remove();
                 addLog(`تم حذف حساب العميل: ${agent}`);
-                alert('تم حذف الحساب بنجاح!');
             }
         }
 
-        /* 🚨 إدارة قائمة المطلوبين */
+        /* 🚨 إدارة المطلوبين */
         function toggleWantedForm() {
             const form = document.getElementById('addWantedForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -595,26 +629,12 @@
             const reason = document.getElementById('wantedReason').value.trim();
             const img = document.getElementById('wantedImage').value.trim() || 'https://via.placeholder.com/150/080d1a/8a9ba8?text=NO+IMAGE';
 
-            if (!name || !reason) {
-                alert('يرجى ملء اسم المشتبه به والتهمة!');
-                return;
-            }
+            if (!name || !reason) return alert('يرجى ملء اسم المشتبه به والتهمة!');
 
             const wantedRef = db.ref('wanted').push();
-            wantedRef.set({
-                id: wantedRef.key,
-                name: name,
-                danger: danger,
-                reason: reason,
-                image: img,
-                addedBy: currentAgent,
-                date: new Date().toLocaleDateString('ar-EG')
-            }, (error) => {
+            wantedRef.set({ id: wantedRef.key, name, danger, reason, image: img, addedBy: currentAgent, date: new Date().toLocaleDateString('ar-EG') }, (error) => {
                 if (!error) {
                     alert('تمت إضافة الشخص إلى قائمة المطلوبين بنجاح!');
-                    document.getElementById('wantedName').value = '';
-                    document.getElementById('wantedReason').value = '';
-                    document.getElementById('wantedImage').value = '';
                     toggleWantedForm();
                     addLog('تمت إضافة مطلوب جديد: ' + name);
                 }
@@ -625,9 +645,7 @@
             db.ref('wanted').on('value', snapshot => {
                 const data = snapshot.val();
                 allWantedCache = [];
-                for (let id in data) {
-                    allWantedCache.push(data[id]);
-                }
+                for (let id in data) allWantedCache.push(data[id]);
                 renderWanted(allWantedCache);
             });
         }
@@ -635,7 +653,6 @@
         function renderWanted(list) {
             const container = document.getElementById('wantedList');
             container.innerHTML = '';
-
             if (list.length === 0) {
                 container.innerHTML = '<p style="color: #8a9ba8; grid-column: 1/-1; text-align: center;">لا يوجد مطلوبين حالياً.</p>';
                 return;
@@ -644,17 +661,11 @@
             list.slice().reverse().forEach(item => {
                 const card = document.createElement('div');
                 card.className = `wanted-card ${item.danger}`;
-
-                let adminControls = '';
-                // صلاحية تعديل وحذف المطلوبين للمدير العام فقط
-                if (currentUserRole === 'admin') {
-                    adminControls = `
-                        <div class="action-btns">
-                            <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
-                            <button class="btn-delete" onclick="removeWanted('${item.id}', '${item.name}')">🗑️ حذف</button>
-                        </div>
-                    `;
-                }
+                let adminControls = currentUserRole === 'admin' ? `
+                    <div class="action-btns">
+                        <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
+                        <button class="btn-delete" onclick="removeWanted('${item.id}', '${item.name}')">🗑️ حذف</button>
+                    </div>` : '';
 
                 card.innerHTML = `
                     <span class="badge-danger">${item.danger === 'high' ? 'عالي الخطورة' : 'متوسط الخطورة'}</span>
@@ -670,45 +681,32 @@
 
         function filterWanted() {
             const query = document.getElementById('searchWantedInput').value.toLowerCase();
-            const filtered = allWantedCache.filter(item => 
-                item.name.toLowerCase().includes(query) || item.reason.toLowerCase().includes(query)
-            );
-            renderWanted(filtered);
+            renderWanted(allWantedCache.filter(item => item.name.toLowerCase().includes(query) || item.reason.toLowerCase().includes(query)));
         }
 
         function editWanted(id, name, currentReason) {
             const newReason = prompt(`تعديل تهمة المطلوب (${name}):`, currentReason);
-            if (newReason && newReason !== currentReason) {
-                db.ref('wanted/' + id + '/reason').set(newReason);
-                addLog(`تم تعديل تهمة المطلوب: ${name}`);
-            }
+            if (newReason) db.ref('wanted/' + id + '/reason').set(newReason);
         }
 
         function removeWanted(id, name) {
-            if (confirm(`هل أنت تأكد من إزالة (${name}) من قائمة المطلوبين؟`)) {
-                db.ref('wanted/' + id).remove();
-                addLog(`تم إزالة المطلوب: ${name}`);
-            }
+            if (confirm(`إزالة (${name}) من القائمة؟`)) db.ref('wanted/' + id).remove();
         }
 
-        /* 🔐 التشفير وفك التشفير (Base64) */
+        /* 🔐 التشفير وفك التشفير */
         function encryptMessage() {
             const input = document.getElementById('plainText').value;
-            if (!input) return;
-            const encoded = btoa(unescape(encodeURIComponent(input)));
-            document.getElementById('resultOutput').value = encoded;
-            addLog("تم تشفير رسالة جديدة.");
+            if (input) document.getElementById('resultOutput').value = btoa(unescape(encodeURIComponent(input)));
         }
 
         function decryptMessage() {
             const input = document.getElementById('cipherInput').value;
-            if (!input) return;
-            try {
-                const decoded = decodeURIComponent(escape(atob(input)));
-                document.getElementById('resultOutput').value = decoded;
-                addLog("تم فك تشفير رسالة.");
-            } catch (e) {
-                document.getElementById('resultOutput').value = "❌ كود تشفير غير صالحة!";
+            if (input) {
+                try {
+                    document.getElementById('resultOutput').value = decodeURIComponent(escape(atob(input)));
+                } catch (e) {
+                    document.getElementById('resultOutput').value = "❌ كود غير صالحة!";
+                }
             }
         }
 
@@ -716,20 +714,9 @@
         function submitReport() {
             const title = document.getElementById('reportTitle').value.trim();
             const content = document.getElementById('reportContent').value.trim();
-            const fileInput = document.getElementById('reportImage');
+            if (!title || !content) return alert('يرجى ملء عنوان وتفاصيل التقرير!');
 
-            if (!title || !content) {
-                alert('يرجى ملء عنوان وتفاصيل التقرير!');
-                return;
-            }
-
-            const reportData = {
-                title: title,
-                content: content,
-                agent: currentAgent,
-                timestamp: new Date().toLocaleString('ar-EG'),
-                image: ""
-            };
+            const reportData = { title, content, agent: currentAgent, timestamp: new Date().toLocaleString('ar-EG'), image: "" };
 
             const sendToDB = (data) => {
                 const reportRef = db.ref('reports').push();
@@ -738,31 +725,24 @@
                         alert('تم إرسال التقرير بنجاح!');
                         document.getElementById('reportTitle').value = '';
                         document.getElementById('reportContent').value = '';
-                        document.getElementById('reportImage').value = '';
                         addLog('تم رفع تقرير جديد: ' + title);
                     }
                 });
             };
 
+            const fileInput = document.getElementById('reportImage');
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    reportData.image = e.target.result;
-                    sendToDB(reportData);
-                };
+                reader.onload = e => { reportData.image = e.target.result; sendToDB(reportData); };
                 reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                sendToDB(reportData);
-            }
+            } else sendToDB(reportData);
         }
 
         function listenToReports() {
             db.ref('reports').on('value', snapshot => {
                 const data = snapshot.val();
                 allReportsCache = [];
-                for (let id in data) {
-                    allReportsCache.push(data[id]);
-                }
+                for (let id in data) allReportsCache.push(data[id]);
                 renderReports(allReportsCache);
             });
         }
@@ -770,7 +750,6 @@
         function renderReports(list) {
             const container = document.getElementById('reportsList');
             container.innerHTML = '';
-
             if (list.length === 0) {
                 container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا يوجد تقارير مرفوعة حالياً.</p>';
                 return;
@@ -800,31 +779,19 @@
 
         function filterReports() {
             const query = document.getElementById('searchReportInput').value.toLowerCase();
-            const filtered = allReportsCache.filter(item => 
-                item.title.toLowerCase().includes(query) || 
-                item.agent.toLowerCase().includes(query) || 
-                item.content.toLowerCase().includes(query)
-            );
-            renderReports(filtered);
+            renderReports(allReportsCache.filter(item => item.title.toLowerCase().includes(query) || item.agent.toLowerCase().includes(query)));
         }
 
         function editReport(id, currentTitle) {
             const newContent = prompt(`تعديل نص التقرير (${currentTitle}):`);
-            if (newContent) {
-                db.ref('reports/' + id + '/content').set(newContent);
-                addLog('تم تعديل تقرير فدرالي.');
-                alert('تم تعديل التقرير بنجاح!');
-            }
+            if (newContent) db.ref('reports/' + id + '/content').set(newContent);
         }
 
         function deleteReport(id) {
-            if (confirm('هل أنت تأكد من حذف هذا التقرير نهائياً؟')) {
-                db.ref('reports/' + id).remove();
-                addLog('تم حذف تقرير فدرالي.');
-            }
+            if (confirm('حذف هذا التقرير نهائياً؟')) db.ref('reports/' + id).remove();
         }
 
-        /* 👥 حالة العناصر المتواجدين */
+        /* 👥 المتواجدون */
         function listenToUsers() {
             db.ref('users').on('value', snapshot => {
                 const container = document.getElementById('usersList');
@@ -849,11 +816,10 @@
             });
         }
 
-        /* ⚖️ حاسبة العقوبات والغرامات */
+        /* ⚖️ حاسبة العقوبات */
         function initPenalCalculator() {
             const container = document.getElementById('chargesContainer');
             container.innerHTML = '';
-
             penalCode.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'charge-item';
@@ -869,32 +835,24 @@
         }
 
         function calculatePenalties() {
-            let totalJail = 0;
-            let totalFine = 0;
-            const checkboxes = document.querySelectorAll('#chargesContainer input[type="checkbox"]:checked');
-
-            checkboxes.forEach(cb => {
+            let totalJail = 0, totalFine = 0;
+            document.querySelectorAll('#chargesContainer input[type="checkbox"]:checked').forEach(cb => {
                 totalJail += parseInt(cb.getAttribute('data-jail')) || 0;
                 totalFine += parseInt(cb.getAttribute('data-fine')) || 0;
             });
-
             document.getElementById('totalJail').innerText = `${totalJail} شهر`;
             document.getElementById('totalFine').innerText = `$${totalFine.toLocaleString()}`;
         }
 
-        /* 📜 سجل العمليات */
         function addLog(message) {
             const logBox = document.getElementById('systemLog');
-            const time = new Date().toLocaleTimeString('ar-EG');
-            logBox.innerHTML += `[${time}] ${message}<br>`;
+            logBox.innerHTML += `[${new Date().toLocaleTimeString('ar-EG')}] ${message}<br>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
 
         function showMsg(msg, color) {
             const box = document.getElementById('authMsg');
-            box.innerText = msg;
-            box.style.color = color;
-            box.style.display = 'block';
+            box.innerText = msg; box.style.color = color; box.style.display = 'block';
         }
     </script>
 </body>
