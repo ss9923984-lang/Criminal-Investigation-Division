@@ -17,7 +17,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px 0; }
 
         .auth-container {
             background: var(--panel-bg);
@@ -61,21 +61,27 @@
         .agent-info span { color: var(--accent-gold); font-weight: bold; }
 
         .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; }
-        .tools-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .tools-section { display: flex; flex-direction: column; gap: 20px; }
+        .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
         .panel { background: #0d1526; padding: 15px; border-radius: 6px; border: 1px solid #1e2c4a; }
         .panel h3 { color: var(--accent-blue); margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #1e2c4a; padding-bottom: 5px; }
 
-        .log-box { height: 140px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
-        .full-width { grid-column: span 2; }
+        .log-box { height: 120px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
 
         /* قائمة المتواجدين */
-        .users-list { list-style: none; max-height: 380px; overflow-y: auto; }
+        .users-list { list-style: none; max-height: 250px; overflow-y: auto; }
         .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #080d1a; border-radius: 4px; margin-bottom: 8px; border-right: 3px solid var(--offline-color); }
         .user-item.online { border-right-color: var(--success-color); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background-color: var(--offline-color); margin-left: 5px; }
         .status-dot.online { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
         .status-text { font-size: 11px; color: #8a9ba8; }
+
+        /* قسم التقارير للقيادة */
+        .admin-reports-panel { display: none; background: #181102; border: 1px solid var(--accent-gold); margin-top: 20px; }
+        .report-card { background: #080d1a; border: 1px solid #2a3a5c; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+        .report-card header { background: transparent; border: none; padding: 0; margin-bottom: 8px; }
+        .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
     </style>
 
     <!-- Firebase SDKs -->
@@ -84,7 +90,7 @@
 </head>
 <body>
 
-    <!-- واجهة تسجيل الدخول والإنشاء -->
+    <!-- تسجيل الدخول -->
     <div class="auth-container" id="authScreen">
         <div class="badge">🛡️</div>
         <h2>CID FEDERAL MDT</h2>
@@ -125,54 +131,93 @@
     <!-- لوحة MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div><strong>CID SYSTEM v4.5</strong> | نظام التشفير وتتبع الوحدات</div>
-            <div class="agent-info">العميل الحالي: <span id="displayAgent">CID-000</span></div>
+            <div><strong>CID SYSTEM v5.0</strong> | نظام التشفير والتقارير السرية</div>
+            <div class="agent-info">العميل: <span id="displayAgent">CID-000</span></div>
             <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
         </header>
 
         <div class="main-content">
-            <!-- قسم الأدوات والتشفير -->
             <div class="tools-section">
-                <div class="panel">
-                    <h3>🔒 تشفير رسالة</h3>
-                    <div class="input-group">
-                        <label>الرسالة النصية</label>
-                        <textarea id="plainText" rows="3" placeholder="أدخل النص..."></textarea>
+                <!-- أداة التشفير -->
+                <div class="two-cols">
+                    <div class="panel">
+                        <h3>🔒 تشفير رسالة</h3>
+                        <div class="input-group">
+                            <label>الرسالة النصية</label>
+                            <textarea id="plainText" rows="2" placeholder="أدخل النص..."></textarea>
+                        </div>
+                        <button class="main-btn" onclick="encryptMessage()">تشفير</button>
                     </div>
-                    <button class="main-btn" onclick="encryptMessage()">تشفير</button>
+
+                    <div class="panel">
+                        <h3>🔓 فك التشفير</h3>
+                        <div class="input-group">
+                            <label>الكود المشفر</label>
+                            <textarea id="cipherInput" rows="2" placeholder="أدخل الكود..."></textarea>
+                        </div>
+                        <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
+                    </div>
                 </div>
 
                 <div class="panel">
-                    <h3>🔓 فك التشفير</h3>
                     <div class="input-group">
-                        <label>الكود المشفر</label>
-                        <textarea id="cipherInput" rows="3" placeholder="أدخل الكود..."></textarea>
-                    </div>
-                    <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
-                </div>
-
-                <div class="panel full-width">
-                    <h3>📊 سجل الميدان والنتائج</h3>
-                    <div class="input-group">
-                        <label>النتيجة:</label>
+                        <label>النتيجة الحالية:</label>
                         <input type="text" id="resultOutput" readonly placeholder="النتيجة..." style="color: var(--accent-gold); font-weight: bold;">
                     </div>
-                    <div class="log-box" id="systemLog">[SYSTEM READY]: تم التوصيل بنجاح.<br></div>
+                </div>
+
+                <!-- نموذج كتابة التقرير (لجميع الأعضاء) -->
+                <div class="panel">
+                    <h3>📝 رفع تقرير ميداني جديد</h3>
+                    <div class="input-group">
+                        <label>عنوان / اسم التقرير</label>
+                        <input type="text" id="reportTitle" placeholder="مثال: تقرير قضية سرقة 104">
+                    </div>
+                    <div class="input-group">
+                        <label>تفاصيل التقرير</label>
+                        <textarea id="reportContent" rows="3" placeholder="اكتب تفاصيل التقرير بالتفصيل..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>إرفاق صورة (اختياري)</label>
+                        <input type="file" id="reportImage" accept="image/*">
+                    </div>
+                    <button class="main-btn" onclick="submitReport()">إرسال التقرير للقيادة</button>
+                </div>
+
+                <!-- قسم الأرشيف الخاص بحسابك فقط (KARLOS SEIFEDDINE) -->
+                <div class="panel admin-reports-panel" id="adminReportsSection">
+                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (خاص بالمسؤول)</h3>
+                    <div class="input-group">
+                        <label>البحث بالعميل أو برقم/عنوان التقرير:</label>
+                        <input type="text" id="searchReportInput" onkeyup="filterReports()" placeholder="اكتب اسم العميل أو عنوان التقرير...">
+                    </div>
+                    <div id="reportsList">
+                        <p style="color: #8a9ba8; text-align: center;">جاري تحميل التقارير السرية...</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>📊 سجل الميدان (Log)</h3>
+                    <div class="log-box" id="systemLog">[SYSTEM READY]: تم الاتصال بنجاح.<br></div>
                 </div>
             </div>
 
-            <!-- قائمة الحالات المباشرة للأعضاء -->
-            <div class="panel">
-                <h3>👥 حالة عناصر القطاع (Active Units)</h3>
-                <ul class="users-list" id="usersList">
-                    <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
-                </ul>
+            <!-- الجانب الأيسر: المتواجدين -->
+            <div>
+                <div class="panel">
+                    <h3>👥 حالة عناصر القطاع</h3>
+                    <ul class="users-list" id="usersList">
+                        <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // إعدادات Firebase الخاصة بمشروعك
+        const ADMIN_USER = "KARLOS SEIFEDDINE";
+        const ADMIN_PIN = "OUSSAMA2010";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCYeYJsyfxvn43GxwEs66uh0LvPWPXbhGU",
             authDomain: "cid-mdt.firebaseapp.com",
@@ -184,10 +229,10 @@
             measurementId: "G-R8Q5DGCYMM"
         };
 
-        // تهيئة Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentAgent = "";
+        let allReportsCache = [];
 
         function switchTab(type) {
             document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
@@ -218,25 +263,43 @@
             const agent = document.getElementById('loginAgent').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
 
+            // التحقق من حساب المدير الخاص بـ KARLOS SEIFEDDINE
+            if (agent === ADMIN_USER && pin === ADMIN_PIN) {
+                setupUserSession(ADMIN_USER);
+                return;
+            }
+
             db.ref('users/' + agent).once('value', snapshot => {
                 const userData = snapshot.val();
                 if (userData && userData.pin === pin) {
-                    currentAgent = agent;
-                    document.getElementById('authScreen').style.display = 'none';
-                    document.getElementById('mdtScreen').style.display = 'block';
-                    document.getElementById('displayAgent').innerText = agent;
-
-                    // تحديث الحالة إلى متصل مع ضبط التحديث اللحظي عند انقطاع الاتصال أو الخروج
-                    const userStatusRef = db.ref('users/' + currentAgent + '/online');
-                    userStatusRef.set(true);
-                    userStatusRef.onDisconnect().set(false);
-
-                    listenToUsers();
-                    addLog("تم تسجيل الدخول: " + agent);
+                    setupUserSession(agent);
                 } else {
                     showMsg('بيانات الدخول غير صحيحة!', 'var(--danger-color)');
                 }
             });
+        }
+
+        function setupUserSession(agent) {
+            currentAgent = agent;
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('mdtScreen').style.display = 'block';
+            document.getElementById('displayAgent').innerText = agent;
+
+            const userStatusRef = db.ref('users/' + currentAgent + '/online');
+            userStatusRef.set(true);
+            userStatusRef.onDisconnect().set(false);
+
+            listenToUsers();
+
+            // إظهار لوحة التحكم السرية للمدير فقط
+            if (currentAgent === ADMIN_USER) {
+                document.getElementById('adminReportsSection').style.display = 'block';
+                listenToReports();
+            } else {
+                document.getElementById('adminReportsSection').style.display = 'none';
+            }
+
+            addLog("تم تسجيل الدخول: " + agent);
         }
 
         function logout() {
@@ -247,7 +310,97 @@
             document.getElementById('authScreen').style.display = 'block';
         }
 
-        // الاستماع المباشر للتغيرات في حالة الأعضاء
+        // إرسال التقرير الميداني
+        function submitReport() {
+            const title = document.getElementById('reportTitle').value.trim();
+            const content = document.getElementById('reportContent').value.trim();
+            const fileInput = document.getElementById('reportImage');
+            const file = fileInput.files[0];
+
+            if (!title || !content) {
+                alert('يرجى كتابة عنوان التقرير والتفاصيل!');
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString('ar-EG');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveReportToDatabase(title, content, e.target.result, timestamp);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                saveReportToDatabase(title, content, null, timestamp);
+            }
+        }
+
+        function saveReportToDatabase(title, content, imgData, timestamp) {
+            const reportRef = db.ref('reports').push();
+            reportRef.set({
+                id: reportRef.key,
+                agent: currentAgent,
+                title: title,
+                content: content,
+                image: imgData,
+                date: timestamp
+            }, (error) => {
+                if (!error) {
+                    alert('تم إرسال التقرير بنجاح إلى القيادة!');
+                    document.getElementById('reportTitle').value = '';
+                    document.getElementById('reportContent').value = '';
+                    document.getElementById('reportImage').value = '';
+                    addLog('تم رفع تقرير جديد: ' + title);
+                }
+            });
+        }
+
+        // عرض التقارير للمسؤول فقط
+        function listenToReports() {
+            db.ref('reports').on('value', snapshot => {
+                const data = snapshot.val();
+                allReportsCache = [];
+                for (let id in data) {
+                    allReportsCache.push(data[id]);
+                }
+                renderReports(allReportsCache);
+            });
+        }
+
+        function renderReports(reports) {
+            const container = document.getElementById('reportsList');
+            container.innerHTML = '';
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا توجد تقارير مسجلة حالياً.</p>';
+                return;
+            }
+
+            reports.reverse().forEach(rep => {
+                const div = document.createElement('div');
+                div.className = 'report-card';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; color: var(--accent-gold); font-size: 13px; font-weight:bold; margin-bottom:5px;">
+                        <span>👤 العميل: ${rep.agent}</span>
+                        <span>📅 ${rep.date}</span>
+                    </div>
+                    <div style="font-size:14px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">📋 العنوان: ${rep.title}</div>
+                    <p style="font-size:12px; color:#ddd; white-space: pre-wrap;">${rep.content}</p>
+                    ${rep.image ? `<img src="${rep.image}" class="report-img" />` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterReports() {
+            const query = document.getElementById('searchReportInput').value.toLowerCase();
+            const filtered = allReportsCache.filter(rep => 
+                rep.agent.toLowerCase().includes(query) || 
+                rep.title.toLowerCase().includes(query)
+            );
+            renderReports(filtered);
+        }
+
         function listenToUsers() {
             db.ref('users').on('value', snapshot => {
                 const usersList = document.getElementById('usersList');
