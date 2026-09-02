@@ -31,32 +31,40 @@
             min-height: 100vh;
         }
 
-        /* شاشة تسجيل الدخول */
-        .login-container {
+        .auth-container {
             background: var(--panel-bg);
             padding: 30px;
             border-radius: 8px;
             border: 1px solid var(--accent-blue);
             box-shadow: 0 0 20px rgba(0, 136, 255, 0.2);
-            width: 350px;
+            width: 380px;
             text-align: center;
         }
 
-        .badge {
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
-
-        .login-container h2 {
-            color: var(--accent-gold);
-            margin-bottom: 5px;
-        }
-
-        .login-container p {
-            font-size: 12px;
-            color: #8a9ba8;
+        .tabs {
+            display: flex;
             margin-bottom: 20px;
+            border-bottom: 1px solid #1e2c4a;
         }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            color: #8a9ba8;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .badge { font-size: 40px; margin-bottom: 5px; }
+        .auth-container h2 { color: var(--accent-gold); margin-bottom: 5px; }
+        .auth-container p { font-size: 11px; color: #8a9ba8; margin-bottom: 15px; }
 
         .input-group {
             margin-bottom: 15px;
@@ -84,7 +92,7 @@
             border-color: var(--accent-blue);
         }
 
-        button {
+        button.main-btn {
             width: 100%;
             padding: 10px;
             background: var(--accent-blue);
@@ -96,11 +104,14 @@
             transition: 0.3s;
         }
 
-        button:hover {
-            background: #0066cc;
+        button.main-btn:hover { background: #0066cc; }
+
+        .msg-box {
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
         }
 
-        /* لوحة التحكم MDT */
         .mdt-container {
             display: none;
             width: 90%;
@@ -121,14 +132,7 @@
             border-bottom: 2px solid var(--accent-gold);
         }
 
-        .agent-info {
-            font-size: 14px;
-        }
-
-        .agent-info span {
-            color: var(--accent-gold);
-            font-weight: bold;
-        }
+        .agent-info span { color: var(--accent-gold); font-weight: bold; }
 
         .main-content {
             display: grid;
@@ -152,20 +156,6 @@
             padding-bottom: 5px;
         }
 
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .btn-danger {
-            background: var(--danger-color);
-        }
-
-        .btn-danger:hover {
-            background: #cc0000;
-        }
-
         .log-box {
             height: 150px;
             background: #050811;
@@ -178,137 +168,178 @@
             color: var(--success-color);
         }
 
-        .full-width {
-            grid-column: span 2;
-        }
-
-        .error-msg {
-            color: var(--danger-color);
-            font-size: 12px;
-            margin-top: 10px;
-            display: none;
-        }
+        .full-width { grid-column: span 2; }
     </style>
 </head>
 <body>
 
-    <!-- واجهة تسجيل الدخول -->
-    <div class="login-container" id="loginScreen">
+    <!-- واجهة تسجيل الدخول والإنشاء -->
+    <div class="auth-container" id="authScreen">
         <div class="badge">🛡️</div>
         <h2>CID FEDERAL MDT</h2>
         <p>CRIMINAL INVESTIGATION DIVISION</p>
-        
-        <div class="input-group">
-            <label>معرّف العميل (Agent ID)</label>
-            <input type="text" id="agentId" placeholder="مثال: CID-402">
+
+        <div class="tabs">
+            <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">تسجيل الدخول</button>
+            <button class="tab-btn" id="registerTab" onclick="switchTab('register')">إنشاء حساب جديد</button>
         </div>
-        
-        <div class="input-group">
-            <label>رمز الأمان (PIN Code)</label>
-            <input type="password" id="pinCode" placeholder="••••">
+
+        <!-- نموذج تسجيل الدخول -->
+        <div id="loginForm">
+            <div class="input-group">
+                <label>معرّف العميل (Agent ID)</label>
+                <input type="text" id="loginAgent" placeholder="مثال: CID-402">
+            </div>
+            <div class="input-group">
+                <label>رمز الأمان (PIN Code)</label>
+                <input type="password" id="loginPin" placeholder="••••">
+            </div>
+            <button class="main-btn" onclick="login()">تسجيل الدخول للنظام</button>
         </div>
-        
-        <button onclick="login()">تسجيل الدخول للنظام</button>
-        <div class="error-msg" id="loginError">بيانات الدخول غير صحيحة!</div>
+
+        <!-- نموذج إنشاء حساب جديد -->
+        <div id="registerForm" style="display: none;">
+            <div class="input-group">
+                <label>اختر معرّف العميل (Agent ID)</label>
+                <input type="text" id="regAgent" placeholder="مثال: CID-705">
+            </div>
+            <div class="input-group">
+                <label>تعيين رمز الأمان (PIN Code)</label>
+                <input type="password" id="regPin" placeholder="••••">
+            </div>
+            <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="register()">تسجيل العميل في القاعدة</button>
+        </div>
+
+        <div class="msg-box" id="authMsg"></div>
     </div>
 
     <!-- واجهة الـ MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div>
-                <strong>CID SYSTEM v4.2</strong> | نظام التشفير الميداني
-            </div>
-            <div class="agent-info">
-                العميل: <span id="displayAgent">CID-000</span> | الحالة: <span style="color: var(--success-color);">متصل</span>
-            </div>
-            <button onclick="logout()" style="width: auto; padding: 5px 15px; background: #333;">خروج</button>
+            <div><strong>CID SYSTEM v4.2</strong> | نظام التشفير الميداني</div>
+            <div class="agent-info">العميل: <span id="displayAgent">CID-000</span> | الحالة: <span style="color: var(--success-color);">متصل</span></div>
+            <button onclick="logout()" style="width: auto; padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">خروج</button>
         </header>
 
         <div class="main-content">
-            <!-- وحدة التشفير -->
             <div class="panel">
                 <h3>🔒 تشفير رسالة ميدانية</h3>
                 <div class="input-group">
                     <label>الرسالة العادية</label>
                     <textarea id="plainText" rows="4" placeholder="أدخل النص المراد تشفيره..."></textarea>
                 </div>
-                <button onclick="encryptMessage()">تشفير البيانات</button>
+                <button class="main-btn" onclick="encryptMessage()">تشفير البيانات</button>
             </div>
 
-            <!-- وحدة فك التشفير -->
             <div class="panel">
                 <h3>🔓 فك تشفير رسالة</h3>
                 <div class="input-group">
                     <label>الرمز المُشفّر</label>
                     <textarea id="cipherInput" rows="4" placeholder="أدخل الكود المُشفّر هنا..."></textarea>
                 </div>
-                <button onclick="decryptMessage()" style="background: var(--accent-gold); color: #000;">فك التشفير</button>
+                <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
             </div>
 
-            <!-- النتيجة والسجلات -->
             <div class="panel full-width">
                 <h3>📊 النتيجة وسجل العمليات (System Audit Log)</h3>
                 <div class="input-group">
                     <label>النتيجة الحالية:</label>
                     <input type="text" id="resultOutput" readonly placeholder="ستظهر النتيجة هنا..." style="color: var(--accent-gold); font-weight: bold;">
                 </div>
-                <div class="log-box" id="systemLog">
-                    [SYSTEM READY]: تم تشغيل نظام التشفير الفدرالي...<br>
-                </div>
+                <div class="log-box" id="systemLog">[SYSTEM READY]: تم تشغيل نظام التشفير الفدرالي...<br></div>
             </div>
         </div>
     </div>
 
     <script>
-        // بيانات الدخول الافتراضية
-        const VALID_AGENT = "CID-100";
-        const VALID_PIN = "9900";
+        function switchTab(type) {
+            const loginForm = document.getElementById('loginForm');
+            const regForm = document.getElementById('registerForm');
+            const loginTab = document.getElementById('loginTab');
+            const regTab = document.getElementById('registerTab');
+            const msgBox = document.getElementById('authMsg');
+            msgBox.style.display = 'none';
+
+            if (type === 'login') {
+                loginForm.style.display = 'block';
+                regForm.style.display = 'none';
+                loginTab.classList.add('active');
+                regTab.classList.remove('active');
+            } else {
+                loginForm.style.display = 'none';
+                regForm.style.display = 'block';
+                regTab.classList.add('active');
+                loginTab.classList.remove('active');
+            }
+        }
+
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('cid_users') || '{}');
+        }
+
+        function register() {
+            const agent = document.getElementById('regAgent').value.trim();
+            const pin = document.getElementById('regPin').value.trim();
+            const msgBox = document.getElementById('authMsg');
+
+            if (!agent || !pin) {
+                showMsg('يرجى ملء جميع الحقول!', 'var(--danger-color)');
+                return;
+            }
+
+            const users = getUsers();
+            if (users[agent]) {
+                showMsg('معرّف العميل هذا مسجّل بالفعل!', 'var(--danger-color)');
+                return;
+            }
+
+            users[agent] = pin;
+            localStorage.setItem('cid_users', JSON.stringify(users));
+            showMsg('تم تسجيل الحساب بنجاح! يمكنك الآن تسجيل الدخول.', 'var(--success-color)');
+            setTimeout(() => switchTab('login'), 1500);
+        }
 
         function login() {
-            const agent = document.getElementById('agentId').value;
-            const pin = document.getElementById('pinCode').value;
-            const errorMsg = document.getElementById('loginError');
+            const agent = document.getElementById('loginAgent').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
+            const users = getUsers();
 
-            if (agent === VALID_AGENT && pin === VALID_PIN) {
-                document.getElementById('loginScreen').style.display = 'none';
+            if (users[agent] && users[agent] === pin) {
+                document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('mdtScreen').style.display = 'block';
                 document.getElementById('displayAgent').innerText = agent;
-                addLog("تم تسجيل الدخول بنجاح بواسطة: " + agent);
+                addLog("تم تسجيل الدخول بنجاح بواسطة العميل: " + agent);
             } else {
-                errorMsg.style.display = 'block';
+                showMsg('بيانات الدخول غير صحيحة أو الحساب غير موجود!', 'var(--danger-color)');
             }
         }
 
         function logout() {
             document.getElementById('mdtScreen').style.display = 'none';
-            document.getElementById('loginScreen').style.display = 'block';
-            document.getElementById('pinCode').value = '';
-            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'block';
+            document.getElementById('loginPin').value = '';
+            document.getElementById('authMsg').style.display = 'none';
         }
 
-        // تشفير الرسالة (Base64)
+        function showMsg(text, color) {
+            const msgBox = document.getElementById('authMsg');
+            msgBox.innerText = text;
+            msgBox.style.color = color;
+            msgBox.style.display = 'block';
+        }
+
         function encryptMessage() {
             const input = document.getElementById('plainText').value;
             if (!input) return;
-
-            // استخدام btoa للتشفير ودعم اللغة العربية
             const encoded = btoa(unescape(encodeURIComponent(input)));
-            const formattedResult = `CID-SEC-${encoded}`;
-            
-            document.getElementById('resultOutput').value = formattedResult;
+            document.getElementById('resultOutput').value = `CID-SEC-${encoded}`;
             addLog(`[تشفير]: تم تشفير نص بطول ${input.length} حرف.`);
         }
 
-        // فك تشفير الرسالة
         function decryptMessage() {
             let input = document.getElementById('cipherInput').value.trim();
             if (!input) return;
-
-            // إزالة البادئة إذا كانت موجودة
-            if (input.startsWith("CID-SEC-")) {
-                input = input.replace("CID-SEC-", "");
-            }
-
+            if (input.startsWith("CID-SEC-")) input = input.replace("CID-SEC-", "");
             try {
                 const decoded = decodeURIComponent(escape(atob(input)));
                 document.getElementById('resultOutput').value = decoded;
@@ -319,7 +350,6 @@
             }
         }
 
-        // إضافة سجل للنظام
         function addLog(message) {
             const logBox = document.getElementById('systemLog');
             const timestamp = new Date().toLocaleTimeString('ar-EG');
