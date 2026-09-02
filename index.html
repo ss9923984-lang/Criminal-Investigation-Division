@@ -110,6 +110,38 @@
         .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
         
         .manage-user-item { display: flex; justify-content: space-between; align-items: center; background: #080d1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border: 1px solid #1e2c4a; font-size: 13px; }
+
+        .mdt-nav {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: #0d1526;
+            border: 1px solid #1e2c4a;
+            border-radius: 6px;
+        }
+        .mdt-nav button {
+            flex: 1 1 120px;
+            padding: 9px 12px;
+            background: #080d1a;
+            color: #e0e6ed;
+            border: 1px solid #1e2c4a;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .mdt-nav button:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .section-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         .criminal-profile { background: #080d1a; border: 1px solid #1e2c4a; border-radius: 6px; padding: 14px; margin-top: 12px; }
         .criminal-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
         .criminal-stat { background: #0d1526; border: 1px solid #1e2c4a; border-radius: 5px; padding: 10px; text-align: center; }
@@ -174,7 +206,7 @@
         <header>
             <div>
                 <img class="header-logo" src="Gemini_Generated_Image_dvb7ntdvb7ntdvb7.jfif" alt="CID Logo">
-                <strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي
+                <strong>CID SYSTEM v7.0</strong> | نظام التحكم والتحقيقات الفدرالي
             </div>
             <div class="agent-info">
                 العميل: <span id="displayAgent">CID-000</span>
@@ -186,8 +218,29 @@
         <div class="main-content">
             <div class="tools-section">
 
+                <div class="mdt-nav">
+                    <button onclick="goToSection('wantedSection')">🚨 المطلوبين</button>
+                    <button onclick="goToSection('criminalSection')">📂 السجل الجنائي</button>
+                    <button onclick="goToSection('reportsCreateSection')">📝 التقارير</button>
+                    <button onclick="goToSection('penaltiesSection')">⚖️ العقوبات</button>
+                    <button onclick="goToSection('onlineSection')">👥 العناصر Online</button>
+                    <button onclick="goToSection('adminReportsSection')">👑 الإدارة</button>
+                </div>
+
+                <div class="panel" style="margin-bottom:15px; border-color:var(--accent-gold);">
+                    <div class="section-title-bar">
+                        <div>
+                            <h3 style="margin-bottom:4px; color:var(--accent-gold);">🛡️ CID COMMAND CENTER</h3>
+                            <small style="color:#8a9ba8;">مركز موحّد لإدارة السجلات والتحقيقات والتقارير</small>
+                        </div>
+                        <div style="font-size:11px; color:#8a9ba8;">
+                            استخدم القائمة للوصول السريع إلى أقسام النظام
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 🚨 قسم قائمة المطلوبين -->
-                <div class="panel">
+                <div class="panel" id="wantedSection">
                     <h3 style="color: var(--danger-color);">🚨 قائمة المطلوبين للعدالة (WANTED LIST)</h3>
                     
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -255,7 +308,7 @@
                 </div>
 
                 <!-- 📂 السجل الجنائي -->
-                <div class="panel">
+                <div class="panel" id="criminalSection">
                     <h3 style="color: var(--accent-gold);">📂 السجل الجنائي للمواطنين</h3>
                     <p style="font-size:11px; color:#8a9ba8; margin-bottom:10px;">
                         ابحث بالاسم أو Citizen ID لعرض القضايا والمخالفات والمذكرات والتقارير المرتبطة.
@@ -334,8 +387,8 @@
                 </div>
 
                 <!-- نموذج كتابة التقرير -->
-                <div class="panel">
-                    <h3>📝 رفع تقرير ميداني جديد</h3>
+                <div class="panel" id="reportsCreateSection">
+                    <h3>📝 رفع تقرير ميداني جديد</h3
                     <div class="input-group">
                         <label>عنوان / اسم التقرير</label>
                         <input type="text" id="reportTitle" placeholder="مثال: تقرير قضية سرقة 104">
@@ -384,7 +437,7 @@
             <!-- الجانب الأيسر -->
             <div>
                 <!-- حاسبة العقوبات التفاعلية -->
-                <div class="panel" style="margin-bottom: 20px;">
+                <div class="panel" id="penaltiesSection" style="margin-bottom: 20px;">
                     <h3 style="color: var(--accent-gold);">⚖️ حاسبة العقوبات والغرامات</h3>
                     <p style="font-size: 11px; color: #8a9ba8; margin-bottom: 10px;">حدد التهم الموجهة للمشتبه به للحساب التلقائي:</p>
                     
@@ -403,8 +456,8 @@
                 </div>
 
                 <!-- قائمة المتواجدين -->
-                <div class="panel">
-                    <h3>👥 حالة عناصر القطاع</h3>
+                <div class="panel" id="onlineSection">
+                    <h3>👥 حالة عناصر القطاع</h3
                     <ul class="users-list" id="usersList">
                         <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
                     </ul>
@@ -457,7 +510,9 @@
         let currentAgent = "";
         let currentRole = "user";
         let allReportsCache = [];
-        let allWantedCache = [];\n        let currentCriminalId = "";\n        let currentCriminalProfile = null;
+        let allWantedCache = [];
+        let currentCriminalId = "";
+        let currentCriminalProfile = null;
 
         // قائمة المخالفات والعقوبات المستخرجة من الصور المرفقة
         const penalCode = [
@@ -650,6 +705,13 @@
             if (hasPermission('manageUsers')) listenToManageUsers();
 
             addLog("تم تسجيل الدخول: " + agent + " | الرتبة: " + role.label);
+        }
+
+
+        function goToSection(id) {
+            const section = document.getElementById(id);
+            if (!section) return;
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function logout() {
