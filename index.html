@@ -119,6 +119,10 @@
         .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
         
         .manage-user-item { display: flex; justify-content: space-between; align-items: center; background: #080d1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border: 1px solid #1e2c4a; font-size: 13px; }
+        .role-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold; margin-right: 5px; }
+        .role-admin { background: var(--accent-gold); color: #000; }
+        .role-manager { background: var(--accent-blue); color: #fff; }
+        .role-agent { background: #333; color: #fff; }
     </style>
 
     <!-- Firebase SDKs -->
@@ -263,9 +267,9 @@
                     <button class="main-btn" onclick="submitReport()">إرسال التقرير للقيادة</button>
                 </div>
 
-                <!-- 👑 قسم إدارة التقارير الحصري للمشرف -->
+                <!-- 👑 قسم إدارة التقارير (يظهر للمدير العام ومشرف التقارير فقط) -->
                 <div class="panel admin-panel" id="adminReportsSection">
-                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (إدارة كاملة)</h3>
+                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (إدارة وإشراف)</h3>
                     <div class="input-group">
                         <label>البحث بالعميل أو برقم/عنوان التقرير:</label>
                         <input type="text" id="searchReportInput" onkeyup="filterReports()" placeholder="اكتب اسم العميل أو عنوان التقرير...">
@@ -275,9 +279,9 @@
                     </div>
                 </div>
 
-                <!-- 👑 قسم إدارة حسابات الأعضاء الحصري للمشرف -->
+                <!-- 👑 قسم إدارة حسابات الأعضاء (خاص بك حصرياً - المدير العام) -->
                 <div class="panel admin-panel" id="adminUsersSection">
-                    <h3 style="color: var(--accent-gold);">👤 إدارة حسابات وصلاحيات العناصر</h3>
+                    <h3 style="color: var(--accent-gold);">👤 إدارة حسابات وصلاحيات العناصر (خاص بالمدير العام)</h3>
                     <div id="manageUsersList">
                         <p style="color: #8a9ba8; text-align: center;">جاري تحميل قائمة الحسابات...</p>
                     </div>
@@ -339,12 +343,12 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentAgent = "";
+        let currentUserRole = "agent"; // الصلاحيات المتاحة: "admin", "report_manager", "agent"
         let allReportsCache = [];
         let allWantedCache = [];
 
-        // قائمة المخالفات والعقوبات المستخرجة من الصور المرفقة
+        // قائمة المخالفات والعقوبات
         const penalCode = [
-            // المخالفات المرورية
             { id: 4, name: "قطع الاشارة", jail: 0, fine: 1500 },
             { id: 5, name: "تجاوز السرعة", jail: 0, fine: 2000 },
             { id: 6, name: "وقوف خاطئ", jail: 0, fine: 1000 },
@@ -360,8 +364,6 @@
             { id: 16, name: "الترفيع بالدراجة النارية", jail: 0, fine: 1500 },
             { id: 17, name: "تدمير ممتلكات الدولة", jail: 0, fine: 300 },
             { id: 18, name: "الهروب من الشرطة", jail: 25, fine: 4000 },
-
-            // المخالفات العامة
             { id: 20, name: "التسول", jail: 20, fine: 0 },
             { id: 21, name: "مخالفة ذوق عام", jail: 20, fine: 2500 },
             { id: 22, name: "إزعاج المواطنين", jail: 10, fine: 1050 },
@@ -381,8 +383,6 @@
             { id: 36, name: "عدم إحترام المحامي", jail: 50, fine: 10000 },
             { id: 37, name: "الاشتباك بالأيادي", jail: 10, fine: 2500 },
             { id: 38, name: "إنتحال الشخصية", jail: 20, fine: 12500 },
-
-            // المخالفات المتعلقة بالأسلحة
             { id: 40, name: "التجارة بالسلاح من الدرجة الأولى", jail: 10, fine: 10000 },
             { id: 41, name: "التجارة بالسلاح من الدرجة الثانية", jail: 20, fine: 20000 },
             { id: 42, name: "التجارة بالسلاح من الدرجة الثالثة", jail: 30, fine: 40000 },
@@ -390,15 +390,11 @@
             { id: 44, name: "سلاح غير قانوني - السلاح الثقيل", jail: 60, fine: 5000 },
             { id: 45, name: "إخراج سلاح", jail: 20, fine: 1500 },
             { id: 46, name: "حمل (Grabbler)", jail: 75, fine: 50000 },
-
-            // الجرائم المتعلقة بالقتل
             { id: 48, name: "إسقاط مواطن", jail: 20, fine: 5000 },
             { id: 49, name: "إسقاط بلا عمد", jail: 15, fine: 1500 },
             { id: 50, name: "محاولة إسقاط مواطن", jail: 15, fine: 3000 },
             { id: 51, name: "إصابة شرطي", jail: 25, fine: 10000 },
             { id: 52, name: "محاولة إصابة شرطي", jail: 15, fine: 5000 },
-
-            // الجرائم المتعلقة بالممنوعات
             { id: 54, name: "ترويج مخدرات من الدرجة الأولى", jail: 10, fine: 5000 },
             { id: 55, name: "ترويج مخدرات من الدرجة الثانية", jail: 15, fine: 10000 },
             { id: 56, name: "حيازة مخدرات", jail: 15, fine: 3000 },
@@ -406,8 +402,6 @@
             { id: 58, name: "حيازة الممنوعات من الدرجة الأولى", jail: 17, fine: 1000 },
             { id: 59, name: "حيازة الممنوعات من الدرجة الثانية", jail: 18, fine: 2500 },
             { id: 60, name: "حيازة الممنوعات من الدرجة الثالثة", jail: 19, fine: 10000 },
-
-            // الجرائم الجنائية
             { id: 62, name: "الدخول للمنشآت العسكرية", jail: 10, fine: 18500 },
             { id: 63, name: "إطلاق أعيرة نارية", jail: 15, fine: 7500 },
             { id: 64, name: "محاولة اختطاف", jail: 20, fine: 3500 },
@@ -447,7 +441,7 @@
                 if (snapshot.exists()) {
                     showMsg('المعرّف مستخدم بالفعل!', 'var(--danger-color)');
                 } else {
-                    db.ref('users/' + agent).set({ pin: pin, online: false });
+                    db.ref('users/' + agent).set({ pin: pin, role: 'agent', online: false });
                     showMsg('تم إنشاء الحساب بنجاح!', 'var(--success-color)');
                     setTimeout(() => switchTab('login'), 1200);
                 }
@@ -459,25 +453,27 @@
             const pin = document.getElementById('loginPin').value.trim();
 
             if (agent === ADMIN_USER && pin === ADMIN_PIN) {
-                setupUserSession(ADMIN_USER);
+                setupUserSession(ADMIN_USER, "admin");
                 return;
             }
 
             db.ref('users/' + agent).once('value', snapshot => {
                 const userData = snapshot.val();
                 if (userData && userData.pin === pin) {
-                    setupUserSession(agent);
+                    setupUserSession(agent, userData.role || "agent");
                 } else {
                     showMsg('بيانات الدخول غير صحيحة!', 'var(--danger-color)');
                 }
             });
         }
 
-        function setupUserSession(agent) {
+        function setupUserSession(agent, role) {
             currentAgent = agent;
+            currentUserRole = role;
+
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('mdtScreen').style.display = 'block';
-            document.getElementById('displayAgent').innerText = agent;
+            document.getElementById('displayAgent').innerText = `${agent} (${getRoleTitle(role)})`;
 
             const userStatusRef = db.ref('users/' + currentAgent + '/online');
             userStatusRef.set(true);
@@ -487,11 +483,18 @@
             listenToWanted();
             initPenalCalculator();
 
-            if (currentAgent === ADMIN_USER) {
+            // إظهار لوحة التحكم حسب الصلاحية:
+            // 1. المدير العام (admin) يرى كل شيء
+            // 2. مشرف التقارير (report_manager) يرى قسم التقارير فقط
+            if (currentUserRole === 'admin') {
                 document.getElementById('adminReportsSection').style.display = 'block';
                 document.getElementById('adminUsersSection').style.display = 'block';
                 listenToReports();
                 listenToManageUsers();
+            } else if (currentUserRole === 'report_manager') {
+                document.getElementById('adminReportsSection').style.display = 'block';
+                document.getElementById('adminUsersSection').style.display = 'none';
+                listenToReports();
             } else {
                 document.getElementById('adminReportsSection').style.display = 'none';
                 document.getElementById('adminUsersSection').style.display = 'none';
@@ -500,15 +503,21 @@
             addLog("تم تسجيل الدخول: " + agent);
         }
 
+        function getRoleTitle(role) {
+            if (role === 'admin') return 'المدير العام';
+            if (role === 'report_manager') return 'مشرف تقارير';
+            return 'عميل';
+        }
+
         function logout() {
-            if (currentAgent) {
+            if (currentAgent && currentAgent !== ADMIN_USER) {
                 db.ref('users/' + currentAgent + '/online').set(false);
             }
             document.getElementById('mdtScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'block';
         }
 
-        /* 👑 إدارة الحسابات (خاصة بالمشرف فقط) */
+        /* 👑 إدارة الحسابات وتعيين الصلاحيات (خاصة بك أنت فقط كمدير عام) */
         function listenToManageUsers() {
             db.ref('users').on('value', snapshot => {
                 const container = document.getElementById('manageUsersList');
@@ -518,16 +527,23 @@
                 for (let agent in data) {
                     if (agent === ADMIN_USER) continue;
 
+                    const role = data[agent].role || 'agent';
                     const div = document.createElement('div');
                     div.className = 'manage-user-item';
                     div.innerHTML = `
                         <div>
                             <strong>👤 ${agent}</strong>
-                            <span style="font-size:11px; color:#8a9ba8; margin-right:10px;">(PIN: ${data[agent].pin || '****'})</span>
+                            <span class="role-badge ${role === 'report_manager' ? 'role-manager' : 'role-agent'}">
+                                ${role === 'report_manager' ? 'مشرف تقارير' : 'عميل ميداني'}
+                            </span>
+                            <span style="font-size:11px; color:#8a9ba8;">(PIN: ${data[agent].pin || '****'})</span>
                         </div>
-                        <div>
-                            <button class="btn-edit" onclick="changeUserPin('${agent}')">🔑 تغيير الرمز</button>
-                            <button class="btn-delete" onclick="deleteUserAccount('${agent}')">🗑️ حذف الحساب</button>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-edit" onclick="toggleUserRole('${agent}', '${role}')">
+                                ${role === 'report_manager' ? '⬇️ سحب الإشراف' : '⭐ إعطاء مشرف تقارير'}
+                            </button>
+                            <button class="btn-edit" style="background:#0088ff; color:#fff;" onclick="changeUserPin('${agent}')">🔑 PIN</button>
+                            <button class="btn-delete" onclick="deleteUserAccount('${agent}')">🗑️ حذف</button>
                         </div>
                     `;
                     container.appendChild(div);
@@ -537,6 +553,17 @@
                     container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا يوجد أعضاء آخرين حالياً.</p>';
                 }
             });
+        }
+
+        function toggleUserRole(agent, currentRole) {
+            const newRole = currentRole === 'report_manager' ? 'agent' : 'report_manager';
+            const actionText = newRole === 'report_manager' ? 'ترقية العميل إلى مشرف تقارير (يمكنه حذف وتعديل التقارير)' : 'تنزيل رتبة العميل إلى عميل عادي';
+            
+            if (confirm(`هل أنت تأكد من ${actionText} بالحساب (${agent})؟`)) {
+                db.ref('users/' + agent + '/role').set(newRole);
+                addLog(`تم تغيير صلاحية العميل ${agent} إلى: ${newRole}`);
+                alert('تم تعديل الصلاحية بنجاح!');
+            }
         }
 
         function changeUserPin(agent) {
@@ -619,7 +646,8 @@
                 card.className = `wanted-card ${item.danger}`;
 
                 let adminControls = '';
-                if (currentAgent === ADMIN_USER) {
+                // صلاحية تعديل وحذف المطلوبين للمدير العام فقط
+                if (currentUserRole === 'admin') {
                     adminControls = `
                         <div class="action-btns">
                             <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
@@ -760,7 +788,10 @@
                     ${item.image ? `<img src="${item.image}" class="report-img" alt="مرفق التقرير">` : ''}
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #1e2c4a; padding-top:5px;">
                         <span style="font-size:11px; color:var(--accent-blue);">العميل المحقق: ${item.agent}</span>
-                        <button class="btn-delete" style="flex:none;" onclick="deleteReport('${item.id}')">🗑️ حذف التقرير</button>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-edit" style="flex:none;" onclick="editReport('${item.id}', '${item.title}')">✏️ تعديل التقرير</button>
+                            <button class="btn-delete" style="flex:none;" onclick="deleteReport('${item.id}')">🗑️ حذف التقرير</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -775,6 +806,15 @@
                 item.content.toLowerCase().includes(query)
             );
             renderReports(filtered);
+        }
+
+        function editReport(id, currentTitle) {
+            const newContent = prompt(`تعديل نص التقرير (${currentTitle}):`);
+            if (newContent) {
+                db.ref('reports/' + id + '/content').set(newContent);
+                addLog('تم تعديل تقرير فدرالي.');
+                alert('تم تعديل التقرير بنجاح!');
+            }
         }
 
         function deleteReport(id) {
@@ -793,12 +833,14 @@
 
                 for (let agent in data) {
                     const isOnline = data[agent].online === true;
+                    const role = data[agent].role || 'agent';
                     const li = document.createElement('li');
                     li.className = `user-item ${isOnline ? 'online' : ''}`;
                     li.innerHTML = `
                         <div>
                             <span class="status-dot ${isOnline ? 'online' : ''}"></span>
                             <strong>${agent}</strong>
+                            ${role === 'report_manager' ? '<span class="role-badge role-manager">مشرف تقارير</span>' : ''}
                         </div>
                         <span class="status-text">${isOnline ? 'متصل الآن' : 'غير متصل'}</span>
                     `;
