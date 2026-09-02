@@ -13,23 +13,11 @@
             --text-color: #e0e6ed;
             --danger-color: #ff4d4d;
             --success-color: #00e676;
+            --offline-color: #78909c;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
 
         .auth-container {
             background: var(--panel-bg);
@@ -41,81 +29,27 @@
             text-align: center;
         }
 
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #1e2c4a;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            color: #8a9ba8;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .tab-btn.active {
-            color: var(--accent-blue);
-            border-bottom: 2px solid var(--accent-blue);
-        }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #1e2c4a; }
+        .tab-btn { flex: 1; padding: 10px; background: transparent; color: #8a9ba8; border: none; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
 
         .badge { font-size: 40px; margin-bottom: 5px; }
         .auth-container h2 { color: var(--accent-gold); margin-bottom: 5px; }
         .auth-container p { font-size: 11px; color: #8a9ba8; margin-bottom: 15px; }
 
-        .input-group {
-            margin-bottom: 15px;
-            text-align: right;
-        }
+        .input-group { margin-bottom: 15px; text-align: right; }
+        .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: var(--accent-blue); }
+        .input-group input, .input-group textarea { width: 100%; padding: 10px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px; outline: none; }
 
-        .input-group label {
-            display: block;
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: var(--accent-blue);
-        }
-
-        .input-group input, .input-group textarea {
-            width: 100%;
-            padding: 10px;
-            background: #080d1a;
-            border: 1px solid #1e2c4a;
-            color: #fff;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .input-group input:focus, .input-group textarea:focus {
-            border-color: var(--accent-blue);
-        }
-
-        button.main-btn {
-            width: 100%;
-            padding: 10px;
-            background: var(--accent-blue);
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
+        button.main-btn { width: 100%; padding: 10px; background: var(--accent-blue); border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.3s; }
         button.main-btn:hover { background: #0066cc; }
 
-        .msg-box {
-            font-size: 12px;
-            margin-top: 10px;
-            display: none;
-        }
+        .msg-box { font-size: 12px; margin-top: 10px; display: none; }
 
         .mdt-container {
             display: none;
-            width: 90%;
-            max-width: 1000px;
+            width: 95%;
+            max-width: 1200px;
             background: var(--panel-bg);
             border: 1px solid #1e2c4a;
             border-radius: 8px;
@@ -123,53 +57,30 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
 
-        header {
-            background: #080d1a;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent-gold);
-        }
-
+        header { background: #080d1a; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-gold); }
         .agent-info span { color: var(--accent-gold); font-weight: bold; }
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-        }
+        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; }
+        .tools-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        .panel {
-            background: #0d1526;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #1e2c4a;
-        }
+        .panel { background: #0d1526; padding: 15px; border-radius: 6px; border: 1px solid #1e2c4a; }
+        .panel h3 { color: var(--accent-blue); margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #1e2c4a; padding-bottom: 5px; }
 
-        .panel h3 {
-            color: var(--accent-blue);
-            margin-bottom: 15px;
-            font-size: 16px;
-            border-bottom: 1px solid #1e2c4a;
-            padding-bottom: 5px;
-        }
-
-        .log-box {
-            height: 150px;
-            background: #050811;
-            border: 1px solid #1e2c4a;
-            border-radius: 4px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            overflow-y: auto;
-            color: var(--success-color);
-        }
-
+        .log-box { height: 140px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
         .full-width { grid-column: span 2; }
+
+        /* قائمة المتواجدين */
+        .users-list { list-style: none; max-height: 380px; overflow-y: auto; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #080d1a; border-radius: 4px; margin-bottom: 8px; border-right: 3px solid var(--offline-color); }
+        .user-item.online { border-right-color: var(--success-color); }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background-color: var(--offline-color); margin-left: 5px; }
+        .status-dot.online { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
+        .status-text { font-size: 11px; color: #8a9ba8; }
     </style>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -184,7 +95,6 @@
             <button class="tab-btn" id="registerTab" onclick="switchTab('register')">إنشاء حساب جديد</button>
         </div>
 
-        <!-- نموذج تسجيل الدخول -->
         <div id="loginForm">
             <div class="input-group">
                 <label>معرّف العميل (Agent ID)</label>
@@ -197,7 +107,6 @@
             <button class="main-btn" onclick="login()">تسجيل الدخول للنظام</button>
         </div>
 
-        <!-- نموذج إنشاء حساب جديد -->
         <div id="registerForm" style="display: none;">
             <div class="input-group">
                 <label>اختر معرّف العميل (Agent ID)</label>
@@ -207,118 +116,158 @@
                 <label>تعيين رمز الأمان (PIN Code)</label>
                 <input type="password" id="regPin" placeholder="••••">
             </div>
-            <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="register()">تسجيل العميل في القاعدة</button>
+            <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="register()">تسجيل العميل</button>
         </div>
 
         <div class="msg-box" id="authMsg"></div>
     </div>
 
-    <!-- واجهة الـ MDT الرئيسية -->
+    <!-- لوحة MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div><strong>CID SYSTEM v4.2</strong> | نظام التشفير الميداني</div>
-            <div class="agent-info">العميل: <span id="displayAgent">CID-000</span> | الحالة: <span style="color: var(--success-color);">متصل</span></div>
-            <button onclick="logout()" style="width: auto; padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">خروج</button>
+            <div><strong>CID SYSTEM v4.5</strong> | نظام التشفير وتتبع الوحدات</div>
+            <div class="agent-info">العميل الحالي: <span id="displayAgent">CID-000</span></div>
+            <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
         </header>
 
         <div class="main-content">
-            <div class="panel">
-                <h3>🔒 تشفير رسالة ميدانية</h3>
-                <div class="input-group">
-                    <label>الرسالة العادية</label>
-                    <textarea id="plainText" rows="4" placeholder="أدخل النص المراد تشفيره..."></textarea>
+            <!-- قسم الأدوات والتشفير -->
+            <div class="tools-section">
+                <div class="panel">
+                    <h3>🔒 تشفير رسالة</h3>
+                    <div class="input-group">
+                        <label>الرسالة النصية</label>
+                        <textarea id="plainText" rows="3" placeholder="أدخل النص..."></textarea>
+                    </div>
+                    <button class="main-btn" onclick="encryptMessage()">تشفير</button>
                 </div>
-                <button class="main-btn" onclick="encryptMessage()">تشفير البيانات</button>
+
+                <div class="panel">
+                    <h3>🔓 فك التشفير</h3>
+                    <div class="input-group">
+                        <label>الكود المشفر</label>
+                        <textarea id="cipherInput" rows="3" placeholder="أدخل الكود..."></textarea>
+                    </div>
+                    <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
+                </div>
+
+                <div class="panel full-width">
+                    <h3>📊 سجل الميدان والنتائج</h3>
+                    <div class="input-group">
+                        <label>النتيجة:</label>
+                        <input type="text" id="resultOutput" readonly placeholder="النتيجة..." style="color: var(--accent-gold); font-weight: bold;">
+                    </div>
+                    <div class="log-box" id="systemLog">[SYSTEM READY]: تم التوصيل بنجاح.<br></div>
+                </div>
             </div>
 
+            <!-- قائمة الحالات المباشرة للأعضاء -->
             <div class="panel">
-                <h3>🔓 فك تشفير رسالة</h3>
-                <div class="input-group">
-                    <label>الرمز المُشفّر</label>
-                    <textarea id="cipherInput" rows="4" placeholder="أدخل الكود المُشفّر هنا..."></textarea>
-                </div>
-                <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
-            </div>
-
-            <div class="panel full-width">
-                <h3>📊 النتيجة وسجل العمليات (System Audit Log)</h3>
-                <div class="input-group">
-                    <label>النتيجة الحالية:</label>
-                    <input type="text" id="resultOutput" readonly placeholder="ستظهر النتيجة هنا..." style="color: var(--accent-gold); font-weight: bold;">
-                </div>
-                <div class="log-box" id="systemLog">[SYSTEM READY]: تم تشغيل نظام التشفير الفدرالي...<br></div>
+                <h3>👥 حالة عناصر القطاع (Active Units)</h3>
+                <ul class="users-list" id="usersList">
+                    <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
+                </ul>
             </div>
         </div>
     </div>
 
     <script>
+        // إعدادات Firebase الخاصة بمشروعك
+        const firebaseConfig = {
+            apiKey: "AIzaSyCYeYJsyfxvn43GxwEs66uh0LvPWPXbhGU",
+            authDomain: "cid-mdt.firebaseapp.com",
+            databaseURL: "https://cid-mdt-default-rtdb.firebaseio.com",
+            projectId: "cid-mdt",
+            storageBucket: "cid-mdt.firebasestorage.app",
+            messagingSenderId: "889731546251",
+            appId: "1:889731546251:web:d339d50c2a667615eba88e",
+            measurementId: "G-R8Q5DGCYMM"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let currentAgent = "";
+
         function switchTab(type) {
-            const loginForm = document.getElementById('loginForm');
-            const regForm = document.getElementById('registerForm');
-            const loginTab = document.getElementById('loginTab');
-            const regTab = document.getElementById('registerTab');
-            const msgBox = document.getElementById('authMsg');
-            msgBox.style.display = 'none';
-
-            if (type === 'login') {
-                loginForm.style.display = 'block';
-                regForm.style.display = 'none';
-                loginTab.classList.add('active');
-                regTab.classList.remove('active');
-            } else {
-                loginForm.style.display = 'none';
-                regForm.style.display = 'block';
-                regTab.classList.add('active');
-                loginTab.classList.remove('active');
-            }
-        }
-
-        function getUsers() {
-            return JSON.parse(localStorage.getItem('cid_users') || '{}');
+            document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
+            document.getElementById('loginTab').classList.toggle('active', type === 'login');
+            document.getElementById('registerTab').classList.toggle('active', type === 'register');
+            document.getElementById('authMsg').style.display = 'none';
         }
 
         function register() {
             const agent = document.getElementById('regAgent').value.trim();
             const pin = document.getElementById('regPin').value.trim();
-            const msgBox = document.getElementById('authMsg');
 
-            if (!agent || !pin) {
-                showMsg('يرجى ملء جميع الحقول!', 'var(--danger-color)');
-                return;
-            }
+            if (!agent || !pin) return showMsg('يرجى ملء جميع الحقول!', 'var(--danger-color)');
 
-            const users = getUsers();
-            if (users[agent]) {
-                showMsg('معرّف العميل هذا مسجّل بالفعل!', 'var(--danger-color)');
-                return;
-            }
-
-            users[agent] = pin;
-            localStorage.setItem('cid_users', JSON.stringify(users));
-            showMsg('تم تسجيل الحساب بنجاح! يمكنك الآن تسجيل الدخول.', 'var(--success-color)');
-            setTimeout(() => switchTab('login'), 1500);
+            db.ref('users/' + agent).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    showMsg('المعرّف مستخدم بالفعل!', 'var(--danger-color)');
+                } else {
+                    db.ref('users/' + agent).set({ pin: pin, online: false });
+                    showMsg('تم إنشاء الحساب بنجاح!', 'var(--success-color)');
+                    setTimeout(() => switchTab('login'), 1200);
+                }
+            });
         }
 
         function login() {
             const agent = document.getElementById('loginAgent').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
-            const users = getUsers();
 
-            if (users[agent] && users[agent] === pin) {
-                document.getElementById('authScreen').style.display = 'none';
-                document.getElementById('mdtScreen').style.display = 'block';
-                document.getElementById('displayAgent').innerText = agent;
-                addLog("تم تسجيل الدخول بنجاح بواسطة العميل: " + agent);
-            } else {
-                showMsg('بيانات الدخول غير صحيحة أو الحساب غير موجود!', 'var(--danger-color)');
-            }
+            db.ref('users/' + agent).once('value', snapshot => {
+                const userData = snapshot.val();
+                if (userData && userData.pin === pin) {
+                    currentAgent = agent;
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('mdtScreen').style.display = 'block';
+                    document.getElementById('displayAgent').innerText = agent;
+
+                    // تحديث الحالة إلى متصل مع ضبط التحديث اللحظي عند انقطاع الاتصال أو الخروج
+                    const userStatusRef = db.ref('users/' + currentAgent + '/online');
+                    userStatusRef.set(true);
+                    userStatusRef.onDisconnect().set(false);
+
+                    listenToUsers();
+                    addLog("تم تسجيل الدخول: " + agent);
+                } else {
+                    showMsg('بيانات الدخول غير صحيحة!', 'var(--danger-color)');
+                }
+            });
         }
 
         function logout() {
+            if (currentAgent) {
+                db.ref('users/' + currentAgent + '/online').set(false);
+            }
             document.getElementById('mdtScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'block';
-            document.getElementById('loginPin').value = '';
-            document.getElementById('authMsg').style.display = 'none';
+        }
+
+        // الاستماع المباشر للتغيرات في حالة الأعضاء
+        function listenToUsers() {
+            db.ref('users').on('value', snapshot => {
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = '';
+                const data = snapshot.val();
+
+                for (let agent in data) {
+                    const isOnline = data[agent].online;
+                    const li = document.createElement('li');
+                    li.className = `user-item ${isOnline ? 'online' : ''}`;
+                    li.innerHTML = `
+                        <div>
+                            <span class="status-dot ${isOnline ? 'online' : ''}"></span>
+                            <strong>${agent}</strong>
+                        </div>
+                        <span class="status-text">${isOnline ? 'متصل الآن' : 'غير متصل'}</span>
+                    `;
+                    usersList.appendChild(li);
+                }
+            });
         }
 
         function showMsg(text, color) {
@@ -333,7 +282,7 @@
             if (!input) return;
             const encoded = btoa(unescape(encodeURIComponent(input)));
             document.getElementById('resultOutput').value = `CID-SEC-${encoded}`;
-            addLog(`[تشفير]: تم تشفير نص بطول ${input.length} حرف.`);
+            addLog(`تم تشفير رسالة.`);
         }
 
         function decryptMessage() {
@@ -343,10 +292,9 @@
             try {
                 const decoded = decodeURIComponent(escape(atob(input)));
                 document.getElementById('resultOutput').value = decoded;
-                addLog(`[فك تشفير]: تم فك تشفير الرسالة بنجاح.`);
+                addLog(`تم فك تشفير الرسالة.`);
             } catch (e) {
-                document.getElementById('resultOutput').value = "❌ خطأ: كود التشفير غير صالح!";
-                addLog(`[خطأ]: محاولة فك تشفير رمز غير صالح.`);
+                document.getElementById('resultOutput').value = "❌ رمز غير صالح!";
             }
         }
 
