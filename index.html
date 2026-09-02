@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CID - Mobile Data Terminal (MDT)</title>
-    
-    <!-- Leaflet CSS الخريطة التفاعلية -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
     <style>
         :root {
             --bg-color: #0a0f1d;
@@ -21,19 +17,10 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            padding: 20px 0; 
-        }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px 0; }
 
         .auth-container {
-            background: rgba(18, 26, 45, 0.95);
+            background: var(--panel-bg);
             padding: 30px;
             border-radius: 8px;
             border: 1px solid var(--accent-blue);
@@ -46,6 +33,7 @@
         .tab-btn { flex: 1; padding: 10px; background: transparent; color: #8a9ba8; border: none; cursor: pointer; font-weight: bold; }
         .tab-btn.active { color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); }
 
+        .badge { font-size: 40px; margin-bottom: 5px; }
         .auth-container h2 { color: var(--accent-gold); margin-bottom: 5px; }
         .auth-container p { font-size: 11px; color: #8a9ba8; margin-bottom: 15px; }
 
@@ -61,33 +49,25 @@
         .mdt-container {
             display: none;
             width: 95%;
-            max-width: 1400px;
-            background: rgba(18, 26, 45, 0.95);
+            max-width: 1300px;
+            background: var(--panel-bg);
             border: 1px solid #1e2c4a;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
 
         header { background: #080d1a; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-gold); }
         .agent-info span { color: var(--accent-gold); font-weight: bold; }
 
-        .main-content { display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; padding: 20px; }
+        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; }
         .tools-section { display: flex; flex-direction: column; gap: 20px; }
         .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        .panel { background: rgba(13, 21, 38, 0.9); padding: 15px; border-radius: 6px; border: 1px solid #1e2c4a; }
+        .panel { background: #0d1526; padding: 15px; border-radius: 6px; border: 1px solid #1e2c4a; }
         .panel h3 { color: var(--accent-blue); margin-bottom: 15px; font-size: 16px; border-bottom: 1px solid #1e2c4a; padding-bottom: 5px; }
 
         .log-box { height: 120px; background: #050811; border: 1px solid #1e2c4a; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px; overflow-y: auto; color: var(--success-color); }
-
-        /* 🗺️ إصلاح أبعاد الخريطة والتنسيق */
-        #map-wrapper { width: 100%; height: 450px; position: relative; }
-        #map { width: 100%; height: 100%; border-radius: 6px; border: 1px solid var(--accent-blue); background: #0fa8d2; }
-        
-        .map-controls { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .map-btn { padding: 6px 12px; background: #080d1a; border: 1px solid var(--accent-blue); color: #fff; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        .map-btn.active { background: var(--accent-blue); }
 
         /* قائمة المتواجدين */
         .users-list { list-style: none; max-height: 200px; overflow-y: auto; }
@@ -95,35 +75,45 @@
         .user-item.online { border-right-color: var(--success-color); }
         .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; background-color: var(--offline-color); margin-left: 5px; }
         .status-dot.online { background-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
+        .status-text { font-size: 11px; color: #8a9ba8; }
 
         /* قائمة المطلوبين */
         .wanted-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; max-height: 350px; overflow-y: auto; margin-top: 10px; }
         .wanted-card { background: #080d1a; border: 1px solid var(--danger-color); border-radius: 6px; padding: 10px; position: relative; }
+        .wanted-card.medium { border-color: var(--accent-gold); }
         .wanted-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: #111; }
+        .wanted-card .badge-danger { position: absolute; top: 15px; left: 15px; background: var(--danger-color); color: #000; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 3px; }
+        .wanted-card.medium .badge-danger { background: var(--accent-gold); }
+        
+        .action-btns { display: flex; gap: 5px; margin-top: 8px; }
+        .btn-edit { background: var(--accent-gold); color: #000; border: none; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; flex: 1; }
+        .btn-delete { background: var(--danger-color); color: #fff; border: none; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 3px; cursor: pointer; flex: 1; }
 
         /* حاسبة العقوبات */
         .charges-list { max-height: 250px; overflow-y: auto; background: #050811; padding: 10px; border-radius: 4px; border: 1px solid #1e2c4a; }
         .charge-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #111d33; font-size: 12px; }
+        .charge-item input { margin-left: 8px; }
 
         .calc-results { display: flex; justify-content: space-around; background: #080d1a; padding: 12px; border-radius: 4px; margin-top: 10px; border: 1px solid var(--accent-gold); text-align: center; }
         .calc-results div span { display: block; font-size: 18px; font-weight: bold; color: var(--accent-gold); }
 
+        /* أقسام الإدارة */
         .admin-panel { display: none; background: #181102; border: 1px solid var(--accent-gold); margin-top: 20px; }
         .report-card { background: #080d1a; border: 1px solid #2a3a5c; padding: 12px; border-radius: 6px; margin-bottom: 10px; }
+        .report-img { max-width: 100%; max-height: 200px; border-radius: 4px; margin-top: 10px; border: 1px solid #333; }
+        
         .manage-user-item { display: flex; justify-content: space-between; align-items: center; background: #080d1a; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; border: 1px solid #1e2c4a; font-size: 13px; }
-        .role-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: bold; margin-right: 5px; }
-        .role-manager { background: var(--accent-blue); color: #fff; }
     </style>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-    <!-- تسجيل الدخول -->
+    <!-- شاشة تسجيل الدخول -->
     <div class="auth-container" id="authScreen">
+        <div class="badge">🛡️</div>
         <h2>CID FEDERAL MDT</h2>
         <p>CRIMINAL INVESTIGATION DIVISION</p>
 
@@ -162,7 +152,7 @@
     <!-- لوحة MDT الرئيسية -->
     <div class="mdt-container" id="mdtScreen">
         <header>
-            <div><span><strong>CID SYSTEM v7.0</strong> | نظام التحكم والتخطيط الميداني</span></div>
+            <div><strong>CID SYSTEM v6.0</strong> | نظام التحكم والتحقيقات الفدرالي</div>
             <div class="agent-info">العميل: <span id="displayAgent">CID-000</span></div>
             <button onclick="logout()" style="padding: 5px 15px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">تسجيل الخروج</button>
         </header>
@@ -170,34 +160,16 @@
         <div class="main-content">
             <div class="tools-section">
 
-                <!-- 🗺️ قسم الخريطة التكتيكية المحدثة -->
-                <div class="panel">
-                    <h3 style="color: var(--accent-gold);">🗺️ الخريطة التكتيكية للمداهمات (GTA V Interactive Map)</h3>
-                    
-                    <div class="map-controls">
-                        <button class="map-btn active" id="btnMode2D" onclick="setMapStyle('atlas')">🌐 أطلس 2D</button>
-                        <button class="map-btn" id="btnMode3D" onclick="setMapStyle('satellite')">🛰️ ستالايت 3D</button>
-                        <span style="border-left: 1px solid #1e2c4a; margin: 0 5px;"></span>
-                        <button class="map-btn" style="border-color: #00e676;" onclick="setDrawTool('police')">🔵 موقع فرقة</button>
-                        <button class="map-btn" style="border-color: var(--danger-color);" onclick="setDrawTool('suspect')">🔴 هدف / تهديد</button>
-                        <button class="map-btn" style="border-color: var(--accent-gold);" onclick="setDrawTool('path')">✏️ رسم خط اقتحام</button>
-                        <button class="map-btn" style="background: #333;" onclick="clearTacticalMap()">🗑️ مسح الخريطة</button>
-                    </div>
-
-                    <div id="map-wrapper">
-                        <div id="map"></div>
-                    </div>
-                </div>
-
-                <!-- 🚨 قائمة المطلوبين -->
+                <!-- 🚨 قسم قائمة المطلوبين -->
                 <div class="panel">
                     <h3 style="color: var(--danger-color);">🚨 قائمة المطلوبين للعدالة (WANTED LIST)</h3>
                     
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <input type="text" id="searchWantedInput" onkeyup="filterWanted()" placeholder="البحث باسم المطلوب..." style="flex: 1; padding: 8px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px;">
+                        <input type="text" id="searchWantedInput" onkeyup="filterWanted()" placeholder="البحث باسم المطلوب أو الجريمة..." style="flex: 1; padding: 8px; background: #080d1a; border: 1px solid #1e2c4a; color: #fff; border-radius: 4px;">
                         <button onclick="toggleWantedForm()" style="padding: 8px 15px; background: var(--danger-color); border: none; color: white; font-weight: bold; border-radius: 4px; cursor: pointer;">+ إضافة مطلوب</button>
                     </div>
 
+                    <!-- نموذج إضافة مطلوب -->
                     <div id="addWantedForm" style="display: none; background: #080d1a; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--danger-color);">
                         <div class="two-cols">
                             <div class="input-group">
@@ -207,66 +179,126 @@
                             <div class="input-group">
                                 <label>مستوى الخطورة</label>
                                 <select id="wantedDanger">
-                                    <option value="high">عالي الخطورة</option>
+                                    <option value="high">عالي الخطورة (خطر جداً)</option>
                                     <option value="medium">متوسط الخطورة</option>
                                 </select>
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>التهمة</label>
-                            <input type="text" id="wantedReason" placeholder="سبب الملاحقة">
+                            <label>التهمة / السبب</label>
+                            <input type="text" id="wantedReason" placeholder="مثال: سطو مسلح، هروب من العدالة">
                         </div>
-                        <button class="main-btn" style="background: var(--danger-color);" onclick="submitWanted()">إضافة للقائمة</button>
+                        <div class="input-group">
+                            <label>رابط الصورة (اختياري)</label>
+                            <input type="text" id="wantedImage" placeholder="https://example.com/photo.jpg">
+                        </div>
+                        <button class="main-btn" style="background: var(--danger-color);" onclick="submitWanted()">حفظ وإدراج في قائمة المطلوبين</button>
                     </div>
 
-                    <div class="wanted-grid" id="wantedList"></div>
+                    <div class="wanted-grid" id="wantedList">
+                        <p style="color: #8a9ba8; grid-column: 1/-1; text-align: center;">جاري تحميل قائمة المطلوبين...</p>
+                    </div>
+                </div>
+
+                <!-- أداة التشفير -->
+                <div class="two-cols">
+                    <div class="panel">
+                        <h3>🔒 تشفير رسالة</h3>
+                        <div class="input-group">
+                            <label>الرسالة النصية</label>
+                            <textarea id="plainText" rows="2" placeholder="أدخل النص..."></textarea>
+                        </div>
+                        <button class="main-btn" onclick="encryptMessage()">تشفير</button>
+                    </div>
+
+                    <div class="panel">
+                        <h3>🔓 فك التشفير</h3>
+                        <div class="input-group">
+                            <label>الكود المشفر</label>
+                            <textarea id="cipherInput" rows="2" placeholder="أدخل الكود..."></textarea>
+                        </div>
+                        <button class="main-btn" style="background: var(--accent-gold); color: #000;" onclick="decryptMessage()">فك التشفير</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="input-group">
+                        <label>النتيجة الحالية:</label>
+                        <input type="text" id="resultOutput" readonly placeholder="النتيجة..." style="color: var(--accent-gold); font-weight: bold;">
+                    </div>
                 </div>
 
                 <!-- نموذج كتابة التقرير -->
                 <div class="panel">
                     <h3>📝 رفع تقرير ميداني جديد</h3>
                     <div class="input-group">
-                        <label>عنوان التقرير</label>
-                        <input type="text" id="reportTitle" placeholder="مثال: تفاصيل المداهمة">
+                        <label>عنوان / اسم التقرير</label>
+                        <input type="text" id="reportTitle" placeholder="مثال: تقرير قضية سرقة 104">
                     </div>
                     <div class="input-group">
                         <label>تفاصيل التقرير</label>
-                        <textarea id="reportContent" rows="3" placeholder="اكتب التقرير..."></textarea>
+                        <textarea id="reportContent" rows="3" placeholder="اكتب تفاصيل التقرير بالتفصيل..."></textarea>
                     </div>
-                    <button class="main-btn" onclick="submitReport()">إرسال التقرير</button>
+                    <div class="input-group">
+                        <label>إرفاق صورة (اختياري)</label>
+                        <input type="file" id="reportImage" accept="image/*">
+                    </div>
+                    <button class="main-btn" onclick="submitReport()">إرسال التقرير للقيادة</button>
                 </div>
 
-                <!-- 👑 أقسام الإدارة -->
+                <!-- 👑 قسم إدارة التقارير الحصري للمشرف -->
                 <div class="panel admin-panel" id="adminReportsSection">
-                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية</h3>
-                    <div id="reportsList"></div>
+                    <h3 style="color: var(--accent-gold);">👑 أرشيف التقارير الفدرالية (إدارة كاملة)</h3>
+                    <div class="input-group">
+                        <label>البحث بالعميل أو برقم/عنوان التقرير:</label>
+                        <input type="text" id="searchReportInput" onkeyup="filterReports()" placeholder="اكتب اسم العميل أو عنوان التقرير...">
+                    </div>
+                    <div id="reportsList">
+                        <p style="color: #8a9ba8; text-align: center;">جاري تحميل التقارير السرية...</p>
+                    </div>
                 </div>
 
+                <!-- 👑 قسم إدارة حسابات الأعضاء الحصري للمشرف -->
                 <div class="panel admin-panel" id="adminUsersSection">
-                    <h3 style="color: var(--accent-gold);">👤 إدارة الأعضاء والحسابات</h3>
-                    <div id="manageUsersList"></div>
+                    <h3 style="color: var(--accent-gold);">👤 إدارة حسابات وصلاحيات العناصر</h3>
+                    <div id="manageUsersList">
+                        <p style="color: #8a9ba8; text-align: center;">جاري تحميل قائمة الحسابات...</p>
+                    </div>
                 </div>
 
                 <div class="panel">
-                    <h3>📊 سجل الميدان</h3>
-                    <div class="log-box" id="systemLog">[SYSTEM READY]: تم تحميل النظام.<br></div>
+                    <h3>📊 سجل الميدان (Log)</h3>
+                    <div class="log-box" id="systemLog">[SYSTEM READY]: تم الاتصال بنجاح.<br></div>
                 </div>
             </div>
 
             <!-- الجانب الأيسر -->
             <div>
+                <!-- حاسبة العقوبات التفاعلية -->
                 <div class="panel" style="margin-bottom: 20px;">
-                    <h3 style="color: var(--accent-gold);">⚖️ حاسبة العقوبات</h3>
+                    <h3 style="color: var(--accent-gold);">⚖️ حاسبة العقوبات والغرامات</h3>
+                    <p style="font-size: 11px; color: #8a9ba8; margin-bottom: 10px;">حدد التهم الموجهة للمشتبه به للحساب التلقائي:</p>
+                    
                     <div class="charges-list" id="chargesContainer"></div>
+
                     <div class="calc-results">
-                        <div><small style="color:#8a9ba8;">السجن</small><span id="totalJail">0 شهر</span></div>
-                        <div><small style="color:#8a9ba8;">الغرامة</small><span id="totalFine">$0</span></div>
+                        <div>
+                            <small style="color:#8a9ba8;">إجمالي السجن</small>
+                            <span id="totalJail">0 شهر</span>
+                        </div>
+                        <div>
+                            <small style="color:#8a9ba8;">إجمالي الغرامة</small>
+                            <span id="totalFine">$0</span>
+                        </div>
                     </div>
                 </div>
 
+                <!-- قائمة المتواجدين -->
                 <div class="panel">
-                    <h3>👥 عناصر القطاع</h3>
-                    <ul class="users-list" id="usersList"></ul>
+                    <h3>👥 حالة عناصر القطاع</h3>
+                    <ul class="users-list" id="usersList">
+                        <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -283,45 +315,124 @@
             projectId: "cid-mdt",
             storageBucket: "cid-mdt.firebasestorage.app",
             messagingSenderId: "889731546251",
-            appId: "1:889731546251:web:d339d50c2a667615eba88e"
+            appId: "1:889731546251:web:d339d50c2a667615eba88e",
+            measurementId: "G-R8Q5DGCYMM"
         };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let currentAgent = "";
-        let currentUserRole = "agent";
+        let allReportsCache = [];
+        let allWantedCache = [];
 
-        /* متغيرات الخريطة */
-        let map, currentTileLayer;
-        let currentTool = null;
-        let mapMarkers = [];
-        let mapLines = [];
-        let activeLinePoints = [];
+        // قائمة المخالفات والعقوبات المستخرجة من الصور المرفقة
+        const penalCode = [
+            // المخالفات المرورية
+            { id: 4, name: "قطع الاشارة", jail: 0, fine: 1500 },
+            { id: 5, name: "تجاوز السرعة", jail: 0, fine: 2000 },
+            { id: 6, name: "وقوف خاطئ", jail: 0, fine: 1000 },
+            { id: 7, name: "عكس السير", jail: 0, fine: 1000 },
+            { id: 8, name: "الالتفاف بشكل خاطئ", jail: 0, fine: 500 },
+            { id: 9, name: "القيادة المتهورة", jail: 0, fine: 2000 },
+            { id: 10, name: "عدم استخدام إشارة المركبة", jail: 0, fine: 600 },
+            { id: 11, name: "عدم حمل هوية", jail: 10, fine: 5000 },
+            { id: 12, name: "عدم حمل رخصة قيادة", jail: 5, fine: 5000 },
+            { id: 13, name: "القيادة تحت تأثير المسكرات", jail: 0, fine: 1050 },
+            { id: 14, name: "عدم الالتزام بالمركبة + تعريض حياة المواطنين للخطر", jail: 0, fine: 2500 },
+            { id: 15, name: "السباقات غير القانونية", jail: 0, fine: 8000 },
+            { id: 16, name: "الترفيع بالدراجة النارية", jail: 0, fine: 1500 },
+            { id: 17, name: "تدمير ممتلكات الدولة", jail: 0, fine: 300 },
+            { id: 18, name: "الهروب من الشرطة", jail: 25, fine: 4000 },
 
-        // طبقات الخريطة الموثوقة لـ GTA V
-        const mapStyles = {
-            atlas: 'https://pam2014.github.io/gtav-map/tiles/atlas/{z}/{x}/{y}.jpg',
-            satellite: 'https://pam2014.github.io/gtav-map/tiles/sat/{z}/{x}/{y}.jpg'
-        };
+            // المخالفات العامة
+            { id: 20, name: "التسول", jail: 20, fine: 0 },
+            { id: 21, name: "مخالفة ذوق عام", jail: 20, fine: 2500 },
+            { id: 22, name: "إزعاج المواطنين", jail: 10, fine: 1050 },
+            { id: 23, name: "إزعاج السلطات", jail: 25, fine: 2100 },
+            { id: 24, name: "استهزاء برجال الأمن", jail: 30, fine: 10000 },
+            { id: 25, name: "عدم الانصياع إلى أوامر الشرطة", jail: 25, fine: 6000 },
+            { id: 26, name: "بلاغ كاذب", jail: 15, fine: 6000 },
+            { id: 27, name: "التدخل بشؤون الشرطة", jail: 5, fine: 10000 },
+            { id: 28, name: "تحرش", jail: 20, fine: 2500 },
+            { id: 29, name: "إهانة رجل أمن", jail: 40, fine: 10000 },
+            { id: 30, name: "محاولة الرشوة", jail: 20, fine: 3500 },
+            { id: 31, name: "الرشوة", jail: 30, fine: 5000 },
+            { id: 32, name: "شهادة الزور", jail: 0, fine: 5000 },
+            { id: 33, name: "الابتزاز", jail: 10, fine: 10000 },
+            { id: 34, name: "عدم الإلتزام بأدوات السلامة", jail: 0, fine: 600 },
+            { id: 35, name: "المقاومة أثناء الإعتقال", jail: 15, fine: 3500 },
+            { id: 36, name: "عدم إحترام المحامي", jail: 50, fine: 10000 },
+            { id: 37, name: "الاشتباك بالأيادي", jail: 10, fine: 2500 },
+            { id: 38, name: "إنتحال الشخصية", jail: 20, fine: 12500 },
+
+            // المخالفات المتعلقة بالأسلحة
+            { id: 40, name: "التجارة بالسلاح من الدرجة الأولى", jail: 10, fine: 10000 },
+            { id: 41, name: "التجارة بالسلاح من الدرجة الثانية", jail: 20, fine: 20000 },
+            { id: 42, name: "التجارة بالسلاح من الدرجة الثالثة", jail: 30, fine: 40000 },
+            { id: 43, name: "سلاح غير ترخيص", jail: 45, fine: 3500 },
+            { id: 44, name: "سلاح غير قانوني - السلاح الثقيل", jail: 60, fine: 5000 },
+            { id: 45, name: "إخراج سلاح", jail: 20, fine: 1500 },
+            { id: 46, name: "حمل (Grabbler)", jail: 75, fine: 50000 },
+
+            // الجرائم المتعلقة بالقتل
+            { id: 48, name: "إسقاط مواطن", jail: 20, fine: 5000 },
+            { id: 49, name: "إسقاط بلا عمد", jail: 15, fine: 1500 },
+            { id: 50, name: "محاولة إسقاط مواطن", jail: 15, fine: 3000 },
+            { id: 51, name: "إصابة شرطي", jail: 25, fine: 10000 },
+            { id: 52, name: "محاولة إصابة شرطي", jail: 15, fine: 5000 },
+
+            // الجرائم المتعلقة بالممنوعات
+            { id: 54, name: "ترويج مخدرات من الدرجة الأولى", jail: 10, fine: 5000 },
+            { id: 55, name: "ترويج مخدرات من الدرجة الثانية", jail: 15, fine: 10000 },
+            { id: 56, name: "حيازة مخدرات", jail: 15, fine: 3000 },
+            { id: 57, name: "تجارة الممنوعات", jail: 20, fine: 3500 },
+            { id: 58, name: "حيازة الممنوعات من الدرجة الأولى", jail: 17, fine: 1000 },
+            { id: 59, name: "حيازة الممنوعات من الدرجة الثانية", jail: 18, fine: 2500 },
+            { id: 60, name: "حيازة الممنوعات من الدرجة الثالثة", jail: 19, fine: 10000 },
+
+            // الجرائم الجنائية
+            { id: 62, name: "الدخول للمنشآت العسكرية", jail: 10, fine: 18500 },
+            { id: 63, name: "إطلاق أعيرة نارية", jail: 15, fine: 7500 },
+            { id: 64, name: "محاولة اختطاف", jail: 20, fine: 3500 },
+            { id: 65, name: "اختطاف", jail: 30, fine: 5000 },
+            { id: 66, name: "اختطاف رجل الدولة", jail: 35, fine: 10000 },
+            { id: 67, name: "قتال الشوارع", jail: 20, fine: 7500 },
+            { id: 68, name: "محاولة تهريب مجرم", jail: 0, fine: 5000 },
+            { id: 69, name: "تهريب مجرم", jail: 0, fine: 10000 },
+            { id: 70, name: "الهروب من السجن", jail: 0, fine: 0 },
+            { id: 71, name: "حمل بطاقة غير عائدة له", jail: 5, fine: 10000 },
+            { id: 72, name: "سرقة المواطنين", jail: 20, fine: 2500 },
+            { id: 73, name: "سرقة سيارة", jail: 15, fine: 5000 },
+            { id: 74, name: "سرقة بقالة", jail: 15, fine: 5000 },
+            { id: 75, name: "سرقة الصراف الآلي (ATM)", jail: 15, fine: 12500 },
+            { id: 76, name: "سرقة البوب كات", jail: 25, fine: 15000 },
+            { id: 77, name: "سرقة مصرف", jail: 30, fine: 18500 },
+            { id: 78, name: "سرقة المجوهرات", jail: 40, fine: 70000 },
+            { id: 79, name: "سرقة بنك بوليتو", jail: 50, fine: 85000 },
+            { id: 80, name: "سرقة البنك المركزي", jail: 60, fine: 100000 }
+        ];
 
         function switchTab(type) {
             document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
             document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
             document.getElementById('loginTab').classList.toggle('active', type === 'login');
             document.getElementById('registerTab').classList.toggle('active', type === 'register');
+            document.getElementById('authMsg').style.display = 'none';
         }
 
         function register() {
             const agent = document.getElementById('regAgent').value.trim();
             const pin = document.getElementById('regPin').value.trim();
-            if (!agent || !pin) return alert('يرجى ملء الحقول!');
+
+            if (!agent || !pin) return showMsg('يرجى ملء جميع الحقول!', 'var(--danger-color)');
 
             db.ref('users/' + agent).once('value', snapshot => {
-                if (snapshot.exists()) alert('الحساب موجود مسبقاً!');
-                else {
-                    db.ref('users/' + agent).set({ pin: pin, role: 'agent', online: false });
-                    alert('تم إنشاء الحساب بنجاح!');
-                    switchTab('login');
+                if (snapshot.exists()) {
+                    showMsg('المعرّف مستخدم بالفعل!', 'var(--danger-color)');
+                } else {
+                    db.ref('users/' + agent).set({ pin: pin, online: false });
+                    showMsg('تم إنشاء الحساب بنجاح!', 'var(--success-color)');
+                    setTimeout(() => switchTab('login'), 1200);
                 }
             });
         }
@@ -331,124 +442,104 @@
             const pin = document.getElementById('loginPin').value.trim();
 
             if (agent === ADMIN_USER && pin === ADMIN_PIN) {
-                setupUserSession(ADMIN_USER, "admin");
+                setupUserSession(ADMIN_USER);
                 return;
             }
 
             db.ref('users/' + agent).once('value', snapshot => {
                 const userData = snapshot.val();
-                if (userData && userData.pin === pin) setupUserSession(agent, userData.role || "agent");
-                else alert('بيانات الدخول خطأ!');
+                if (userData && userData.pin === pin) {
+                    setupUserSession(agent);
+                } else {
+                    showMsg('بيانات الدخول غير صحيحة!', 'var(--danger-color)');
+                }
             });
         }
 
-        function setupUserSession(agent, role) {
+        function setupUserSession(agent) {
             currentAgent = agent;
-            currentUserRole = role;
-
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('mdtScreen').style.display = 'block';
             document.getElementById('displayAgent').innerText = agent;
 
-            // إعادة ضبط وتحديث أبعاد الخريطة عند فتح الشاشة
-            setTimeout(() => {
-                initTacticalMap();
-            }, 300);
+            const userStatusRef = db.ref('users/' + currentAgent + '/online');
+            userStatusRef.set(true);
+            userStatusRef.onDisconnect().set(false);
 
             listenToUsers();
             listenToWanted();
             initPenalCalculator();
 
-            if (currentUserRole === 'admin') {
+            if (currentAgent === ADMIN_USER) {
                 document.getElementById('adminReportsSection').style.display = 'block';
                 document.getElementById('adminUsersSection').style.display = 'block';
                 listenToReports();
                 listenToManageUsers();
+            } else {
+                document.getElementById('adminReportsSection').style.display = 'none';
+                document.getElementById('adminUsersSection').style.display = 'none';
             }
+
+            addLog("تم تسجيل الدخول: " + agent);
         }
 
         function logout() {
+            if (currentAgent) {
+                db.ref('users/' + currentAgent + '/online').set(false);
+            }
             document.getElementById('mdtScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'block';
         }
 
-        /* 🗺️ تهيئة ودعم الخريطة بشكل صحيح */
-        function initTacticalMap() {
-            if (map) {
-                map.invalidateSize(); // إجبار الخريطة على إعادة رسم نفسها
-                return;
-            }
+        /* 👑 إدارة الحسابات (خاصة بالمشرف فقط) */
+        function listenToManageUsers() {
+            db.ref('users').on('value', snapshot => {
+                const container = document.getElementById('manageUsersList');
+                container.innerHTML = '';
+                const data = snapshot.val();
 
-            // إنشاء الخريطة بنظام إحداثيات مبسط مناسب لـ GTA V
-            map = L.map('map', {
-                crs: L.CRS.Simple,
-                minZoom: 1,
-                maxZoom: 5,
-                zoomControl: true
-            }).setView([-100, 100], 2);
+                for (let agent in data) {
+                    if (agent === ADMIN_USER) continue;
 
-            // إضافة الطبقة الأولى (Atlas)
-            currentTileLayer = L.tileLayer(mapStyles.atlas, {
-                minZoom: 1,
-                maxZoom: 5,
-                tileSize: 256,
-                noWrap: true
-            }).addTo(map);
+                    const div = document.createElement('div');
+                    div.className = 'manage-user-item';
+                    div.innerHTML = `
+                        <div>
+                            <strong>👤 ${agent}</strong>
+                            <span style="font-size:11px; color:#8a9ba8; margin-right:10px;">(PIN: ${data[agent].pin || '****'})</span>
+                        </div>
+                        <div>
+                            <button class="btn-edit" onclick="changeUserPin('${agent}')">🔑 تغيير الرمز</button>
+                            <button class="btn-delete" onclick="deleteUserAccount('${agent}')">🗑️ حذف الحساب</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
 
-            // إصلاح مشكلة عدم اكتمال تحميل الخريطة
-            setTimeout(() => map.invalidateSize(), 500);
-
-            // التفاعل مع النقر على الخريطة
-            map.on('click', function(e) {
-                if (!currentTool) return;
-
-                if (currentTool === 'police') {
-                    let marker = L.circleMarker(e.latlng, { color: '#0088ff', radius: 8, fillColor: '#0088ff', fillOpacity: 0.9 }).addTo(map);
-                    marker.bindPopup("<b>🔵 موقع فرقة أمنية</b>").openPopup();
-                    mapMarkers.push(marker);
-                } else if (currentTool === 'suspect') {
-                    let marker = L.circleMarker(e.latlng, { color: '#ff4d4d', radius: 8, fillColor: '#ff4d4d', fillOpacity: 0.9 }).addTo(map);
-                    marker.bindPopup("<b>🔴 موقع تهديد / هدف</b>").openPopup();
-                    mapMarkers.push(marker);
-                } else if (currentTool === 'path') {
-                    activeLinePoints.push(e.latlng);
-                    if (activeLinePoints.length > 1) {
-                        let line = L.polyline(activeLinePoints, { color: '#d4af37', weight: 4, dashArray: '5, 8' }).addTo(map);
-                        mapLines.push(line);
-                    }
+                if (container.children.length === 0) {
+                    container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا يوجد أعضاء آخرين حالياً.</p>';
                 }
             });
         }
 
-        function setMapStyle(style) {
-            if (!map) return;
-            document.getElementById('btnMode2D').classList.toggle('active', style === 'atlas');
-            document.getElementById('btnMode3D').classList.toggle('active', style === 'satellite');
-
-            map.removeLayer(currentTileLayer);
-            currentTileLayer = L.tileLayer(mapStyles[style], {
-                minZoom: 1,
-                maxZoom: 5,
-                tileSize: 256,
-                noWrap: true
-            }).addTo(map);
+        function changeUserPin(agent) {
+            const newPin = prompt(`أدخل رمز الأمان (PIN) الجديد للحساب (${agent}):`);
+            if (newPin) {
+                db.ref('users/' + agent + '/pin').set(newPin);
+                addLog(`تم تغيير PIN الخاص بـ: ${agent}`);
+                alert('تم تغيير الرمز بنجاح!');
+            }
         }
 
-        function setDrawTool(tool) {
-            currentTool = tool;
-            if (tool !== 'path') activeLinePoints = [];
-            addLog("تم اختيار أداة الخريطة: " + tool);
+        function deleteUserAccount(agent) {
+            if (confirm(`هل أنت تأكد من حظر وحذف حساب (${agent}) نهائياً من النظام؟`)) {
+                db.ref('users/' + agent).remove();
+                addLog(`تم حذف حساب العميل: ${agent}`);
+                alert('تم حذف الحساب بنجاح!');
+            }
         }
 
-        function clearTacticalMap() {
-            if (!map) return;
-            mapMarkers.forEach(m => map.removeLayer(m));
-            mapLines.forEach(l => map.removeLayer(l));
-            mapMarkers = []; mapLines = []; activeLinePoints = [];
-            addLog("تم مسح علامات الخريطة.");
-        }
-
-        /* 🚨 باقي الوظائف والحسابات */
+        /* 🚨 إدارة قائمة المطلوبين */
         function toggleWantedForm() {
             const form = document.getElementById('addWantedForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -458,118 +549,326 @@
             const name = document.getElementById('wantedName').value.trim();
             const danger = document.getElementById('wantedDanger').value;
             const reason = document.getElementById('wantedReason').value.trim();
+            const img = document.getElementById('wantedImage').value.trim() || 'https://via.placeholder.com/150/080d1a/8a9ba8?text=NO+IMAGE';
 
-            if (!name || !reason) return alert('يرجى كتابة الاسم والتهمة!');
+            if (!name || !reason) {
+                alert('يرجى ملء اسم المشتبه به والتهمة!');
+                return;
+            }
 
-            db.ref('wanted').push().set({ name, danger, reason, addedBy: currentAgent, date: new Date().toLocaleDateString('ar-EG') });
-            toggleWantedForm();
+            const wantedRef = db.ref('wanted').push();
+            wantedRef.set({
+                id: wantedRef.key,
+                name: name,
+                danger: danger,
+                reason: reason,
+                image: img,
+                addedBy: currentAgent,
+                date: new Date().toLocaleDateString('ar-EG')
+            }, (error) => {
+                if (!error) {
+                    alert('تمت إضافة الشخص إلى قائمة المطلوبين بنجاح!');
+                    document.getElementById('wantedName').value = '';
+                    document.getElementById('wantedReason').value = '';
+                    document.getElementById('wantedImage').value = '';
+                    toggleWantedForm();
+                    addLog('تمت إضافة مطلوب جديد: ' + name);
+                }
+            });
         }
 
         function listenToWanted() {
             db.ref('wanted').on('value', snapshot => {
-                const container = document.getElementById('wantedList');
-                container.innerHTML = '';
                 const data = snapshot.val();
+                allWantedCache = [];
                 for (let id in data) {
-                    const item = data[id];
-                    const card = document.createElement('div');
-                    card.className = 'wanted-card';
-                    card.innerHTML = `
-                        <strong style="color:#fff;">${item.name}</strong>
-                        <p style="font-size:11px; color:#8a9ba8;">${item.reason}</p>
-                    `;
-                    container.appendChild(card);
+                    allWantedCache.push(data[id]);
                 }
+                renderWanted(allWantedCache);
             });
         }
 
+        function renderWanted(list) {
+            const container = document.getElementById('wantedList');
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: #8a9ba8; grid-column: 1/-1; text-align: center;">لا يوجد مطلوبين حالياً.</p>';
+                return;
+            }
+
+            list.reverse().forEach(item => {
+                const card = document.createElement('div');
+                card.className = `wanted-card ${item.danger}`;
+                
+                let adminControls = '';
+                if (currentAgent === ADMIN_USER) {
+                    adminControls = `
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick="editWanted('${item.id}', '${item.name}', '${item.reason}')">✏️ تعديل</button>
+                            <button class="btn-delete" onclick="removeWanted('${item.id}', '${item.name}')">🗑️ حذف</button>
+                        </div>
+                    `;
+                } else {
+                    adminControls = `
+                        <button onclick="removeWanted('${item.id}', '${item.name}')" style="width:100%; margin-top:8px; padding:4px; background:#1e2c4a; border:none; color:var(--danger-color); font-size:11px; border-radius:3px; cursor:pointer;">تم القبض</button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <span class="badge-danger">${item.danger === 'high' ? 'خطر جداً' : 'متوسط'}</span>
+                    <img src="${item.image}" alt="Wanted">
+                    <div style="font-weight:bold; color:#fff; font-size:14px; margin-bottom:4px;">${item.name}</div>
+                    <div style="font-size:11px; color:#8a9ba8; margin-bottom:8px;"><strong>التهمة:</strong> ${item.reason}</div>
+                    ${adminControls}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function editWanted(id, oldName, oldReason) {
+            const newName = prompt("تعديل اسم المطلوب:", oldName);
+            const newReason = prompt("تعديل التهمة والسبب:", oldReason);
+
+            if (newName && newReason) {
+                db.ref('wanted/' + id).update({
+                    name: newName,
+                    reason: newReason
+                });
+                addLog(`تم تعديل بيانات المطلوب: ${newName}`);
+            }
+        }
+
+        function removeWanted(id, name) {
+            if (confirm(`هل أنت تأكد من إزالة (${name}) من قائمة المطلوبين؟`)) {
+                db.ref('wanted/' + id).remove();
+                addLog('تم إزالة المطلوب: ' + name);
+            }
+        }
+
+        function filterWanted() {
+            const query = document.getElementById('searchWantedInput').value.toLowerCase();
+            const filtered = allWantedCache.filter(w => 
+                w.name.toLowerCase().includes(query) || 
+                w.reason.toLowerCase().includes(query)
+            );
+            renderWanted(filtered);
+        }
+
+        /* ⚖️ حاسبة العقوبات */
+        function initPenalCalculator() {
+            const container = document.getElementById('chargesContainer');
+            container.innerHTML = '';
+
+            penalCode.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'charge-item';
+                div.innerHTML = `
+                    <label style="cursor:pointer;">
+                        <input type="checkbox" value="${item.id}" onchange="calculatePenalty()">
+                        ${item.name}
+                    </label>
+                    <span style="color:#8a9ba8; font-size:10px;">${item.jail > 0 ? item.jail + 'شهر' : ''} ${item.fine > 0 ? '$' + item.fine : ''}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function calculatePenalty() {
+            let totalJail = 0;
+            let totalFine = 0;
+
+            const checkboxes = document.querySelectorAll('#chargesContainer input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const charge = penalCode.find(c => c.id === id);
+                if (charge) {
+                    totalJail += charge.jail;
+                    totalFine += charge.fine;
+                }
+            });
+
+            document.getElementById('totalJail').innerText = totalJail + " شهر";
+            document.getElementById('totalFine').innerText = "$" + totalFine.toLocaleString();
+        }
+
+        /* 📝 التقارير وإدارتها */
         function submitReport() {
             const title = document.getElementById('reportTitle').value.trim();
             const content = document.getElementById('reportContent').value.trim();
-            if (!title || !content) return alert('أدخل بيانات التقرير!');
+            const fileInput = document.getElementById('reportImage');
+            const file = fileInput.files[0];
 
-            db.ref('reports').push().set({ title, content, agent: currentAgent, timestamp: new Date().toLocaleString('ar-EG') });
-            alert('تم إرسال التقرير!');
+            if (!title || !content) {
+                alert('يرجى كتابة عنوان التقرير والتفاصيل!');
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString('ar-EG');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveReportToDatabase(title, content, e.target.result, timestamp);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                saveReportToDatabase(title, content, null, timestamp);
+            }
+        }
+
+        function saveReportToDatabase(title, content, imgData, timestamp) {
+            const reportRef = db.ref('reports').push();
+            reportRef.set({
+                id: reportRef.key,
+                agent: currentAgent,
+                title: title,
+                content: content,
+                image: imgData,
+                date: timestamp
+            }, (error) => {
+                if (!error) {
+                    alert('تم إرسال التقرير بنجاح إلى القيادة!');
+                    document.getElementById('reportTitle').value = '';
+                    document.getElementById('reportContent').value = '';
+                    document.getElementById('reportImage').value = '';
+                    addLog('تم رفع تقرير جديد: ' + title);
+                }
+            });
         }
 
         function listenToReports() {
             db.ref('reports').on('value', snapshot => {
-                const container = document.getElementById('reportsList');
-                container.innerHTML = '';
                 const data = snapshot.val();
+                allReportsCache = [];
                 for (let id in data) {
-                    const item = data[id];
-                    const div = document.createElement('div');
-                    div.className = 'report-card';
-                    div.innerHTML = `<strong>${item.title}</strong><p>${item.content}</p><small style="color:var(--accent-blue)">بواسطة: ${item.agent}</small>`;
-                    container.appendChild(div);
+                    allReportsCache.push(data[id]);
                 }
+                renderReports(allReportsCache);
             });
         }
 
-        function listenToManageUsers() {
-            db.ref('users').on('value', snapshot => {
-                const container = document.getElementById('manageUsersList');
-                container.innerHTML = '';
-                const data = snapshot.val();
-                for (let agent in data) {
-                    if (agent === ADMIN_USER) continue;
-                    const div = document.createElement('div');
-                    div.className = 'manage-user-item';
-                    div.innerHTML = `<span>👤 ${agent}</span><button class="map-btn" onclick="deleteUser('${agent}')">حذف</button>`;
-                    container.appendChild(div);
+        function renderReports(reports) {
+            const container = document.getElementById('reportsList');
+            container.innerHTML = '';
+
+            if (reports.length === 0) {
+                container.innerHTML = '<p style="color: #8a9ba8; text-align: center;">لا توجد تقارير مسجلة حالياً.</p>';
+                return;
+            }
+
+            reports.reverse().forEach(rep => {
+                const div = document.createElement('div');
+                div.className = 'report-card';
+
+                let adminReportBtns = '';
+                if (currentAgent === ADMIN_USER) {
+                    adminReportBtns = `
+                        <div class="action-btns" style="margin-top:10px;">
+                            <button class="btn-edit" onclick="editReport('${rep.id}', '${rep.title}', \`${rep.content}\`)">✏️ تعديل التقرير</button>
+                            <button class="btn-delete" onclick="deleteReport('${rep.id}')">🗑️ حذف التقرير</button>
+                        </div>
+                    `;
                 }
+
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; color: var(--accent-gold); font-size: 13px; font-weight:bold; margin-bottom:5px;">
+                        <span>👤 العميل: ${rep.agent}</span>
+                        <span>📅 ${rep.date}</span>
+                    </div>
+                    <div style="font-size:14px; font-weight:bold; color:var(--accent-blue); margin-bottom:5px;">📋 العنوان: ${rep.title}</div>
+                    <p style="font-size:12px; color:#ddd; white-space: pre-wrap;">${rep.content}</p>
+                    ${rep.image ? `<img src="${rep.image}" class="report-img" />` : ''}
+                    ${adminReportBtns}
+                `;
+                container.appendChild(div);
             });
         }
 
-        function deleteUser(agent) {
-            if (confirm('حذف الحساب؟')) db.ref('users/' + agent).remove();
+        function editReport(id, oldTitle, oldContent) {
+            const newTitle = prompt("تعديل عنوان التقرير:", oldTitle);
+            const newContent = prompt("تعديل تفاصيل التقرير:", oldContent);
+
+            if (newTitle && newContent) {
+                db.ref('reports/' + id).update({
+                    title: newTitle,
+                    content: newContent
+                });
+                addLog(`تم تعديل التقرير: ${newTitle}`);
+            }
+        }
+
+        function deleteReport(id) {
+            if (confirm("هل أنت تأكد من حذف هذا التقرير نهائياً؟")) {
+                db.ref('reports/' + id).remove();
+                addLog('تم حذف تقرير من الأرشيف.');
+            }
+        }
+
+        function filterReports() {
+            const query = document.getElementById('searchReportInput').value.toLowerCase();
+            const filtered = allReportsCache.filter(rep => 
+                rep.agent.toLowerCase().includes(query) || 
+                rep.title.toLowerCase().includes(query)
+            );
+            renderReports(filtered);
         }
 
         function listenToUsers() {
             db.ref('users').on('value', snapshot => {
-                const container = document.getElementById('usersList');
-                container.innerHTML = '';
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = '';
                 const data = snapshot.val();
+
                 for (let agent in data) {
+                    const isOnline = data[agent].online;
                     const li = document.createElement('li');
-                    li.className = 'user-item online';
-                    li.innerHTML = `<span>${agent}</span><small style="color:var(--success-color)">متصل</small>`;
-                    container.appendChild(li);
+                    li.className = `user-item ${isOnline ? 'online' : ''}`;
+                    li.innerHTML = `
+                        <div>
+                            <span class="status-dot ${isOnline ? 'online' : ''}"></span>
+                            <strong>${agent}</strong>
+                        </div>
+                        <span class="status-text">${isOnline ? 'متصل الآن' : 'غير متصل'}</span>
+                    `;
+                    usersList.appendChild(li);
                 }
             });
         }
 
-        function initPenalCalculator() {
-            const container = document.getElementById('chargesContainer');
-            const items = [
-                { name: "الهروب من الشرطة", jail: 25, fine: 4000 },
-                { name: "سلاح غير قانوني", jail: 60, fine: 5000 },
-                { name: "سرقة بنك", jail: 60, fine: 100000 }
-            ];
-            container.innerHTML = '';
-            items.forEach(item => {
-                container.innerHTML += `
-                    <div class="charge-item">
-                        <label><input type="checkbox" data-jail="${item.jail}" data-fine="${item.fine}" onchange="calcPenalties()"> ${item.name}</label>
-                        <span>${item.jail}m | $${item.fine}</span>
-                    </div>`;
-            });
+        function showMsg(text, color) {
+            const msgBox = document.getElementById('authMsg');
+            msgBox.innerText = text;
+            msgBox.style.color = color;
+            msgBox.style.display = 'block';
         }
 
-        function calcPenalties() {
-            let j = 0, f = 0;
-            document.querySelectorAll('#chargesContainer input:checked').forEach(c => {
-                j += parseInt(c.getAttribute('data-jail'));
-                f += parseInt(c.getAttribute('data-fine'));
-            });
-            document.getElementById('totalJail').innerText = j + " شهر";
-            document.getElementById('totalFine').innerText = "$" + f;
+        function encryptMessage() {
+            const input = document.getElementById('plainText').value;
+            if (!input) return;
+            const encoded = btoa(unescape(encodeURIComponent(input)));
+            document.getElementById('resultOutput').value = `CID-SEC-${encoded}`;
+            addLog(`تم تشفير رسالة.`);
         }
 
-        function addLog(msg) {
-            const l = document.getElementById('systemLog');
-            l.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        function decryptMessage() {
+            let input = document.getElementById('cipherInput').value.trim();
+            if (!input) return;
+            if (input.startsWith("CID-SEC-")) input = input.replace("CID-SEC-", "");
+            try {
+                const decoded = decodeURIComponent(escape(atob(input)));
+                document.getElementById('resultOutput').value = decoded;
+                addLog(`تم فك تشفير الرسالة.`);
+            } catch (e) {
+                document.getElementById('resultOutput').value = "❌ رمز غير صالح!";
+            }
+        }
+
+        function addLog(message) {
+            const logBox = document.getElementById('systemLog');
+            const timestamp = new Date().toLocaleTimeString('ar-EG');
+            logBox.innerHTML += `[${timestamp}] ${message}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
         }
     </script>
 </body>
