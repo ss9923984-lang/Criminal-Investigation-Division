@@ -388,7 +388,7 @@
 
                 <!-- نموذج كتابة التقرير -->
                 <div class="panel" id="reportsCreateSection">
-                    <h3>📝 رفع تقرير ميداني جديد</h3
+                    <h3>📝 رفع تقرير ميداني جديد</h3>
                     <div class="input-group">
                         <label>عنوان / اسم التقرير</label>
                         <input type="text" id="reportTitle" placeholder="مثال: تقرير قضية سرقة 104">
@@ -457,7 +457,7 @@
 
                 <!-- قائمة المتواجدين -->
                 <div class="panel" id="onlineSection">
-                    <h3>👥 حالة عناصر القطاع</h3
+                    <h3>👥 حالة عناصر القطاع</h3>
                     <ul class="users-list" id="usersList">
                         <li style="text-align: center; color: #8a9ba8; padding: 20px;">جاري تحميل القائمة...</li>
                     </ul>
@@ -619,7 +619,7 @@
                 if (snapshot.exists()) {
                     showMsg('المعرّف مستخدم بالفعل!', 'var(--danger-color)');
                 } else {
-                    db.ref('users/' + agent).set({ pin: pin, role: 'officer', online: false });
+                    db.ref('users/' + agent).set({ pin: pin, role: 'officer', online: false, lastSeen: Date.now() });
                     showMsg('تم إنشاء الحساب بنجاح!', 'var(--success-color)');
                     setTimeout(() => switchTab('login'), 1200);
                 }
@@ -696,6 +696,22 @@
             userStatusRef.set(true);
             userStatusRef.onDisconnect().set(false);
 
+            // الحساب الرئيسي يظهر أيضاً في قائمة عناصر القطاع.
+            if (agent === ADMIN_USER) {
+                db.ref('users/' + ADMIN_USER).update({
+                    role: 'superadmin',
+                    online: true,
+                    lastSeen: Date.now()
+                });
+                db.ref('users/' + ADMIN_USER + '/online').onDisconnect().set(false);
+            } else {
+                db.ref('users/' + currentAgent).update({
+                    role: currentRole,
+                    online: true,
+                    lastSeen: Date.now()
+                });
+            }
+
             listenToUsers();
             listenToWanted();
             initPenalCalculator();
@@ -716,7 +732,10 @@
 
         function logout() {
             if (currentAgent) {
-                db.ref('users/' + currentAgent + '/online').set(false);
+                db.ref('users/' + currentAgent).update({
+                    online: false,
+                    lastSeen: Date.now()
+                });
             }
             document.getElementById('mdtScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'block';
@@ -1322,24 +1341,56 @@
         }
 
         function listenToUsers() {
-            db.ref('users').on('value', snapshot => {
-                const usersList = document.getElementById('usersList');
-                usersList.innerHTML = '';
-                const data = snapshot.val();
+            const usersList = document.getElementById('usersList');
+            if (!usersList) return;
 
-                for (let agent in data) {
-                    const isOnline = data[agent].online;
+            usersList.innerHTML = '<li style="text-align:center;color:#8a9ba8;padding:20px;">جاري تحميل القائمة...</li>';
+
+            db.ref('users').on('value', snapshot => {
+                usersList.innerHTML = '';
+                const data = snapshot.val() || {};
+                const agents = Object.keys(data);
+
+                if (agents.length === 0) {
+                    usersList.innerHTML = '<li style="text-align:center;color:#8a9ba8;padding:20px;">لا توجد حسابات مسجلة.</li>';
+                    return;
+                }
+
+                agents.sort((a, b) => {
+                    const onlineA = data[a] && data[a].online === true;
+                    const onlineB = data[b] && data[b].online === true;
+                    if (onlineA !== onlineB) return onlineA ? -1 : 1;
+                    return a.localeCompare(b);
+                });
+
+                agents.forEach(agent => {
+                    const user = data[agent] || {};
+                    const isOnline = user.online === true;
+                    const roleKey = user.role || 'officer';
+                    const role = ROLES[roleKey] || ROLES.officer;
+
                     const li = document.createElement('li');
                     li.className = `user-item ${isOnline ? 'online' : ''}`;
+
+                    const safeAgent = escapeHtml(agent);
+                    const safeRole = escapeHtml(role.label);
+
                     li.innerHTML = `
-                        <div>
+                        <div style="display:flex;align-items:center;gap:8px;">
                             <span class="status-dot ${isOnline ? 'online' : ''}"></span>
-                            <strong>${agent}</strong>
+                            <div>
+                                <strong>${safeAgent}</strong>
+                                <div style="font-size:10px;color:#8a9ba8;">${safeRole}</div>
+                            </div>
                         </div>
-                        <span class="status-text">${isOnline ? 'متصل الآن' : 'غير متصل'}</span>
+                        <span class="status-text">${isOnline ? '🟢 متصل الآن' : '⚫ غير متصل'}</span>
                     `;
+
                     usersList.appendChild(li);
-                }
+                });
+            }, error => {
+                usersList.innerHTML = '<li style="text-align:center;color:var(--danger-color);padding:20px;">تعذر تحميل قائمة العناصر. تحقق من صلاحيات Firebase.</li>';
+                console.error('Users listener error:', error);
             });
         }
 
