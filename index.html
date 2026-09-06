@@ -794,6 +794,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
 </head>
 
 <body>
@@ -1400,6 +1401,20 @@
 
                     </div>
 
+                    <div class="input-group">
+
+                        <label>🎥 رابط فيديو كدليل (اختياري)</label>
+
+                        <input type="url"
+                               id="reportVideoUrl"
+                               placeholder="https://example.com/video.mp4">
+
+                        <small style="display:block;color:#8a9ba8;margin-top:6px;">
+                            الفيديو اختياري. ضع رابط الفيديو فقط، ولن يتم رفع الفيديو أو تخزينه في Firebase.
+                        </small>
+
+                    </div>
+
                     <button class="main-btn"
                             onclick="submitReport()">
                         إرسال التقرير للقيادة
@@ -1804,6 +1819,7 @@
                 permissions: [
                     "manageUsers",
                     "manageRoles",
+                    "managePins",
                     "manageReports",
                     "manageWanted",
                     "manageRecords",
@@ -1820,6 +1836,8 @@
                 label: "Command",
                 className: "rank-command",
                 permissions: [
+                    "manageUsers",
+                    "manageRoles",
                     "manageReports",
                     "manageWanted",
                     "manageRecords",
@@ -1827,7 +1845,8 @@
                     "createWanted",
                     "createRecords",
                     "viewRecords",
-                    "viewAll"
+                    "viewAll",
+                    "manageGangPlanning"
                 ]
             },
 
@@ -1910,6 +1929,8 @@
         firebase.initializeApp(firebaseConfig);
 
         const db = firebase.database();
+
+        const storage = firebase.storage();
 
 
         let currentAgent = "";
@@ -2172,7 +2193,8 @@
 
         function canManageGangPlanning() {
 
-            return isReportsOfficer();
+            return hasPermission('manageGangPlanning') ||
+                   isReportsOfficer();
 
         }
 
@@ -2856,9 +2878,9 @@
 
         function changeUserPin(agent) {
 
-            if (!hasPermission('manageUsers'))
+            if (!hasPermission('managePins'))
                 return alert(
-                    '❌ لا تملك صلاحية إدارة الحسابات.'
+                    '❌ تغيير رموز الدخول متاح للـ Super Admin فقط.'
                 );
 
 
@@ -4298,14 +4320,10 @@
                 ).value.trim();
 
 
-            const fileInput =
+            const videoUrl =
                 document.getElementById(
-                    'reportImage'
-                );
-
-
-            const file =
-                fileInput.files[0];
+                    'reportVideoUrl'
+                ).value.trim();
 
 
             if (!title || !content) {
@@ -4317,6 +4335,47 @@
                 return;
 
             }
+
+
+            /*
+             * الفيديو اختياري.
+             * يتم حفظ الرابط فقط، بدون رفع الفيديو إلى Firebase Storage.
+             */
+            if (videoUrl) {
+
+                try {
+
+                    const parsedUrl =
+                        new URL(videoUrl);
+
+                    if (
+                        parsedUrl.protocol !== 'http:' &&
+                        parsedUrl.protocol !== 'https:'
+                    ) {
+                        throw new Error('Invalid URL');
+                    }
+
+                } catch (e) {
+
+                    alert(
+                        '❌ رابط الفيديو غير صحيح. يجب أن يبدأ بـ https:// أو http://'
+                    );
+
+                    return;
+
+                }
+
+            }
+
+
+            const fileInput =
+                document.getElementById(
+                    'reportImage'
+                );
+
+
+            const file =
+                fileInput.files[0];
 
 
             const timestamp =
@@ -4339,7 +4398,8 @@
                             content,
                             e.target.result,
                             timestamp,
-                            citizenId
+                            citizenId,
+                            videoUrl || null
                         );
 
                     };
@@ -4354,7 +4414,8 @@
                     content,
                     null,
                     timestamp,
-                    citizenId
+                    citizenId,
+                    videoUrl || null
                 );
 
             }
@@ -4367,11 +4428,18 @@
             content,
             imgData,
             timestamp,
-            citizenId = ''
+            citizenId = '',
+            videoUrl = null,
+            existingReportKey = null
         ) {
 
             const reportRef =
-                db.ref('reports').push();
+                existingReportKey
+                    ? db.ref(
+                        'reports/' +
+                        existingReportKey
+                    )
+                    : db.ref('reports').push();
 
 
             reportRef.set({
@@ -4391,6 +4459,9 @@
                 image:
                     imgData,
 
+                video:
+                    videoUrl || null,
+
                 date:
                     timestamp,
 
@@ -4398,6 +4469,12 @@
                     citizenId || null
 
             }, error => {
+
+                const submitButton =
+                    document.querySelector(
+                        'button[onclick="submitReport()"]'
+                    );
+
 
                 if (!error) {
 
@@ -4422,13 +4499,44 @@
 
 
                     document.getElementById(
+                        'reportVideoUrl'
+                    ).value = '';
+
+
+                    document.getElementById(
                         'reportCitizenId'
                     ).value = '';
+
+
+                    if (submitButton) {
+
+                        submitButton.disabled = false;
+
+                        submitButton.innerText =
+                            'إرسال التقرير للقيادة';
+
+                    }
 
 
                     addLog(
                         'تم رفع تقرير جديد: ' +
                         title
+                    );
+
+                } else {
+
+                    if (submitButton) {
+
+                        submitButton.disabled = false;
+
+                        submitButton.innerText =
+                            'إرسال التقرير للقيادة';
+
+                    }
+
+
+                    alert(
+                        '❌ تعذر حفظ التقرير في قاعدة البيانات.'
                     );
 
                 }
@@ -4572,6 +4680,37 @@
                         ${
                             rep.image
                                 ? `<img src="${escapeHtmlAttr(rep.image)}" class="report-img">`
+                                : ''
+                        }
+
+
+                        ${
+                            rep.video
+                                ? `
+                                    <div style="margin-top:12px;">
+                                        <div style="color:var(--accent-gold);font-size:12px;font-weight:bold;margin-bottom:6px;">
+                                            🎥 دليل فيديو
+                                        </div>
+
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            style="width:100%;max-height:420px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:#000;"
+                                        >
+                                            <source src="${escapeHtmlAttr(rep.video)}">
+                                            متصفحك لا يدعم تشغيل الفيديو.
+                                        </video>
+
+                                        <a
+                                            href="${escapeHtmlAttr(rep.video)}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style="display:inline-block;margin-top:7px;color:var(--accent-blue);font-size:11px;"
+                                        >
+                                            🔗 فتح الفيديو
+                                        </a>
+                                    </div>
+                                `
                                 : ''
                         }
 
@@ -6364,6 +6503,19 @@
 
             if (reportImage)
                 reportImage.disabled =
+                    !hasPermission(
+                        'createReports'
+                    );
+
+
+            const reportVideo =
+                document.getElementById(
+                    'reportVideo'
+                );
+
+
+            if (reportVideo)
+                reportVideo.disabled =
                     !hasPermission(
                         'createReports'
                     );
