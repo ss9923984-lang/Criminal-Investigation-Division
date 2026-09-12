@@ -1357,6 +1357,25 @@
         .cia-category-grid.pending-locked{opacity:.35;pointer-events:none;filter:grayscale(.7)}
 
 
+
+        /* =========================================================
+           CIA CHAT - إضافة جديدة فقط
+           ========================================================= */
+        .cia-chat-section{background:linear-gradient(145deg,#0d1526,#080e1b);border:1px solid #263b61;border-radius:10px;padding:15px}
+        .cia-chat-box{height:430px;overflow-y:auto;background:#050811;border:1px solid #1e2c4a;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px}
+        .cia-chat-empty{text-align:center;color:#70839a;padding:45px 10px}
+        .cia-chat-message{max-width:82%;padding:10px 12px;border:1px solid #263b61;border-radius:9px;background:#0d1526;align-self:flex-start;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+        .cia-chat-message.mine{align-self:flex-end;border-color:rgba(0,136,255,.55);background:#0b1930}
+        .cia-chat-sender{color:var(--accent-gold);font-size:11px;font-weight:900;margin-bottom:5px}
+        .cia-chat-text{color:#e8edf4;font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+        .cia-chat-time{color:#70839a;font-size:9px;margin-top:7px;direction:ltr;text-align:right}
+        .cia-chat-compose{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:10px}
+        .cia-chat-compose textarea{width:100%;min-height:58px;resize:vertical;padding:10px;background:#080d1a;border:1px solid #1e2c4a;color:#fff;border-radius:6px;outline:none}
+        .cia-chat-compose button{min-height:58px;border:1px solid var(--accent-blue);border-radius:6px;background:var(--accent-blue);color:#fff;font-weight:900;cursor:pointer}
+        .cia-chat-compose button:hover{background:#0066cc}
+        .rank-chat{color:#fff!important;background:#4a247a!important;border-color:#a970ff!important}
+        .cia-chat-category-hidden{display:none!important}
+        @media(max-width:560px){.cia-chat-box{height:360px}.cia-chat-message{max-width:92%}.cia-chat-compose{grid-template-columns:1fr}}
 </style>
 
     <!-- Firebase SDKs -->
@@ -1523,6 +1542,9 @@
     <button class="cia-category" onclick="goToSection('onlineSection')">
         <b>📁 USERS</b><small>الأعضاء والمتصلون</small>
     </button>
+    <button class="cia-category cia-chat-category-hidden" id="chatCategoryButton" onclick="goToSection('chatSection')">
+        <b>💬 CHAT</b><small>المحادثة الداخلية</small>
+    </button>
 </div>
 
 <div class="cia-category-home" id="ciaCategoryHome">
@@ -1572,6 +1594,9 @@
 
                     <button onclick="goToSection('onlineSection')">
                         👥 العناصر Online
+                    </button>
+                    <button onclick="goToSection('chatSection')" id="chatNavButton" style="display:none;">
+                        💬 CIA CHAT
                     </button>
 
                     <button onclick="goToSection('adminReportsSection')">
@@ -2429,6 +2454,34 @@
                     </ul>
 
                 </div>
+                <!-- CIA CHAT -->
+                <div class="panel cia-chat-section"
+                     id="chatSection"
+                     style="display:none;">
+
+                    <div class="section-title-bar">
+                        <div>
+                            <h3 style="color:var(--accent-gold);margin-bottom:4px;">
+                                💬 CIA INTERNAL CHAT
+                            </h3>
+                            <small style="color:#8a9ba8;">
+                                محادثة داخلية لأعضاء رتبة CHAT و ADMIN
+                            </small>
+                        </div>
+                        <span class="rank-badge rank-chat">CHAT ACCESS</span>
+                    </div>
+
+                    <div class="cia-chat-box" id="ciaChatMessages">
+                        <div class="cia-chat-empty">جاري تحميل المحادثة...</div>
+                    </div>
+
+                    <div class="cia-chat-compose">
+                        <textarea id="ciaChatInput" maxlength="2000"
+                                  placeholder="اكتب رسالتك هنا..."
+                                  onkeydown="handleChatKeydown(event)"></textarea>
+                        <button type="button" onclick="sendChatMessage()">إرسال 💬</button>
+                    </div>
+                </div>
 
             </div>
 
@@ -2462,6 +2515,11 @@
                 label: "VIEW",
                 className: "rank-user",
                 permissions: ["viewRecords","viewAll"]
+            },
+            chat: {
+                label: "CHAT",
+                className: "rank-chat",
+                permissions: ["chat"]
             },
             pending: {
                 label: "بانتظار الرتبة",
@@ -2509,6 +2567,7 @@
         let currentAgent = "";
 
         let currentRole = "user";
+        let currentRoles = [];
         let roleSessionListener = null;
         let systemListenersStarted = false;
 
@@ -2720,15 +2779,11 @@
 
                 if (userData && userData.pin === pin) {
 
-                    const assignedRole =
-                        userData.role === 'admin' ? 'admin' :
-                        userData.role === 'cid_member' ? 'cid_member' :
-                        userData.role === 'view' ? 'view' :
-                        userData.role === 'cia_commander' || userData.role === 'cia_member'
-                            ? 'cid_member'
-                            : 'pending';
+                    const assignedRoles = userData.roles !== undefined
+                        ? normalizeRoles(userData.roles)
+                        : normalizeRoles(userData.role);
 
-                    setupUserSession(agent, assignedRole);
+                    setupUserSession(agent, assignedRoles);
 
                 } else {
 
@@ -2746,14 +2801,14 @@
 
         function hasPermission(permission) {
 
-            if (
-                ROLES[currentRole] &&
-                ROLES[currentRole].permissions.includes(permission)
-            ) {
-                return true;
-            }
+            const rolesToCheck = Array.isArray(currentRoles) && currentRoles.length
+                ? currentRoles
+                : [currentRole];
 
-            return false;
+            return rolesToCheck.some(roleName =>
+                ROLES[roleName] &&
+                ROLES[roleName].permissions.includes(permission)
+            );
         }
 
 
@@ -2765,15 +2820,19 @@
         }
 
         function isMember() {
-            return isAdmin() || currentRole === 'cid_member';
+            return isAdmin() || (Array.isArray(currentRoles) && currentRoles.includes('cid_member')) || currentRole === 'cid_member';
         }
 
         function isViewOnly() {
-            return currentRole === 'view';
+            return currentRole === 'view' && (!Array.isArray(currentRoles) || currentRoles.length <= 1);
         }
 
         function canUseSystem() {
-            return isAdmin() || currentRole === 'cid_member' || currentRole === 'view';
+            return isAdmin() || (Array.isArray(currentRoles) && currentRoles.some(r => ['cid_member','view','chat'].includes(r))) || ['cid_member','view','chat'].includes(currentRole);
+        }
+
+        function canUseChat() {
+            return isAdmin() || (Array.isArray(currentRoles) && currentRoles.includes('chat')) || currentRole === 'chat';
         }
 
         function canManageRoles() {
@@ -2811,7 +2870,28 @@
             if (role === 'admin') return 'admin';
             if (role === 'cid_member' || role === 'cia_commander' || role === 'cia_member') return 'cid_member';
             if (role === 'view') return 'view';
+            if (role === 'chat') return 'chat';
             return 'pending';
+        }
+
+        function normalizeRoles(roles) {
+            if (Array.isArray(roles)) {
+                const normalized = roles.map(normalizeRole).filter(r => r !== 'pending');
+                return [...new Set(normalized)];
+            }
+            const single = normalizeRole(roles);
+            return single === 'pending' ? [] : [single];
+        }
+
+        function setSessionRoles(roles) {
+            currentRoles = normalizeRoles(roles);
+
+            if (currentAgent === ADMIN_USER) {
+                currentRole = 'admin';
+                currentRoles = ['admin'];
+            } else {
+                currentRole = currentRoles[0] || 'pending';
+            }
         }
 
         function watchAssignedRole(agent) {
@@ -2821,17 +2901,22 @@
             }
             if (!agent || agent === ADMIN_USER) return;
 
-            roleSessionListener = db.ref('users/' + agent + '/role');
+            roleSessionListener = db.ref('users/' + agent);
             roleSessionListener.on('value', snapshot => {
-                const newRole = normalizeRole(snapshot.val());
-                if (newRole === currentRole) return;
-                currentRole = newRole;
+                const data = snapshot.val() || {};
+                const newRoles = normalizeRoles(data.roles !== undefined ? data.roles : data.role);
+                const newPrimary = newRoles[0] || 'pending';
 
-                const role = ROLES[currentRole] || ROLES.pending;
-                const rankEl = document.getElementById('displayRank');
-                if (rankEl) {
-                    rankEl.innerText = role.label;
-                    rankEl.className = 'rank-badge ' + role.className;
+                if (JSON.stringify(newRoles) === JSON.stringify(currentRoles) && newPrimary === currentRole) return;
+
+                currentRoles = newRoles;
+                currentRole = newPrimary;
+
+                const labels = currentRoles.map(r => ROLES[r]?.label).filter(Boolean);
+                const roleEl = document.getElementById('displayRank');
+                if (roleEl) {
+                    roleEl.innerText = labels.length ? labels.join(' + ') : ROLES.pending.label;
+                    roleEl.className = 'rank-badge ' + (ROLES[currentRole]?.className || ROLES.pending.className);
                 }
 
                 const lock = document.getElementById('pendingRoleLock');
@@ -2851,6 +2936,14 @@
 
                 updatePermissionUI();
                 updateGangPermissionUI();
+                updateChatPermissionUI();
+
+                if (canUseChat()) listenToChat();
+                else if (chatListenerRef) {
+                    chatListenerRef.off();
+                    chatListenerRef = null;
+                    chatListenerStarted = false;
+                }
             });
         }
 
@@ -2859,11 +2952,7 @@
             // Set the session identity/role FIRST, then validate access.
             currentAgent = agent;
 
-            if (agent === ADMIN_USER) {
-                currentRole = 'admin';
-            } else {
-                currentRole = normalizeRole(roleOverride);
-            }
+            setSessionRoles(agent === ADMIN_USER ? ['admin'] : roleOverride);
 
             const role =
                 ROLES[currentRole] || ROLES.view;
@@ -2985,6 +3074,11 @@
 
             updateGangPermissionUI();
 
+            if (canUseChat())
+                listenToChat();
+
+            updateChatPermissionUI();
+
 
             // كل أعضاء CIA يستطيعون مشاهدة أرشيف التقارير.
             listenToReports();
@@ -3078,7 +3172,8 @@
                 'adminReportsSection',
                 'adminUsersSection',
                 'penaltiesSection',
-                'onlineSection'
+                'onlineSection',
+                'chatSection'
             ];
 
             sections.forEach(sectionId => {
@@ -3107,6 +3202,11 @@
                 return;
             }
 
+            if (id === 'chatSection' && !canUseChat()) {
+                alert('❌ هذه الصفحة متاحة فقط لرتبة CHAT أو ADMIN.');
+                return;
+            }
+
             const home = document.getElementById('ciaCategoryHome');
             const workspace = document.getElementById('ciaWorkspace');
 
@@ -3121,7 +3221,8 @@
                 'adminReportsSection',
                 'adminUsersSection',
                 'penaltiesSection',
-                'onlineSection'
+                'onlineSection',
+                'chatSection'
             ];
 
             sections.forEach(sectionId => {
@@ -3144,6 +3245,11 @@
                 roleSessionListener.off();
                 roleSessionListener = null;
             }
+            if (chatListenerRef) {
+                chatListenerRef.off();
+                chatListenerRef = null;
+            }
+            chatListenerStarted = false;
             systemListenersStarted = false;
 
             if (currentAgent) {
@@ -3213,7 +3319,8 @@
                         const userRole =
                             data[agent].role === 'admin' ? 'admin' :
                             data[agent].role === 'cid_member' || data[agent].role === 'cia_commander' || data[agent].role === 'cia_member' ? 'cid_member' :
-                            data[agent].role === 'view' ? 'view' : 'pending';
+                            data[agent].role === 'view' ? 'view' :
+                            data[agent].role === 'chat' ? 'chat' : 'pending';
 
                         const role =
                             ROLES[userRole] || ROLES.pending;
@@ -3298,34 +3405,50 @@
             if (agent === ADMIN_USER)
                 return alert('❌ لا يمكن تعديل رتبة ADMIN.');
 
-            const choice = prompt(`إدارة رتبة ${agent}:\n\n1. CID Member\n2. VIEW\n3. إزالة الصلاحية\n\nاكتب 1 أو 2 أو 3:`);
+            const choice = prompt(`إدارة رتب ${agent}:
+
+1. CID Member
+2. VIEW
+3. CHAT
+4. CID Member + CHAT
+5. VIEW + CHAT
+6. إزالة جميع الصلاحيات
+
+اكتب رقم الاختيار:`);
 
             if (choice === null) return;
 
-            const role = choice === '1'
-                ? 'cid_member'
-                : choice === '2'
-                    ? 'view'
-                    : choice === '3'
-                        ? 'pending'
-                        : null;
+            const roles = {
+                '1': ['cid_member'],
+                '2': ['view'],
+                '3': ['chat'],
+                '4': ['cid_member', 'chat'],
+                '5': ['view', 'chat'],
+                '6': []
+            };
 
-            if (!role) return alert('❌ اختيار غير صحيح.');
+            if (!(choice in roles))
+                return alert('❌ اختيار غير صحيح.');
 
-            db.ref('users/' + agent + '/role').set(role, error => {
+            const selectedRoles = roles[choice];
+
+            db.ref('users/' + agent + '/roles').set(selectedRoles, error => {
 
                 if (error) {
-                    alert('❌ تعذر تحديث الرتبة.');
+                    alert('❌ تعذر تحديث الرتب.');
                     return;
                 }
 
-                addLog(
-                    `ADMIN: تم تغيير رتبة ${agent} إلى ${ROLES[role].label}`
-                );
+                // Backward compatibility مع النظام القديم
+                db.ref('users/' + agent + '/role').set(selectedRoles[0] || 'pending');
 
-                alert(
-                    `✅ تم تحديث رتبة ${agent} إلى ${ROLES[role].label}.`
-                );
+                const labels = selectedRoles.length
+                    ? selectedRoles.map(r => ROLES[r].label).join(' + ')
+                    : ROLES.pending.label;
+
+                addLog(`ADMIN: تم تغيير رتب ${agent} إلى ${labels}`);
+
+                alert(`✅ تم تحديث رتب ${agent} إلى ${labels}.`);
             });
         }
 
@@ -5431,7 +5554,8 @@
                             const roleKey =
                                 user.role === 'admin' ? 'admin' :
                                 user.role === 'cid_member' || user.role === 'cia_commander' || user.role === 'cia_member' ? 'cid_member' :
-                                user.role === 'view' ? 'view' : 'view';
+                                user.role === 'view' ? 'view' :
+                                user.role === 'chat' ? 'chat' : 'view';
 
                             const role =
                                 ROLES[roleKey] || ROLES.view;
@@ -6840,6 +6964,113 @@
            PERMISSION UI
            ========================================================= */
 
+
+        /* =========================================================
+           CIA CHAT - إضافة جديدة فقط
+           ========================================================= */
+        let chatListenerStarted = false;
+        let chatListenerRef = null;
+
+        function updateChatPermissionUI() {
+            const category = document.getElementById('chatCategoryButton');
+            const nav = document.getElementById('chatNavButton');
+
+            if (category)
+                category.classList.toggle('cia-chat-category-hidden', !canUseChat());
+
+            if (nav)
+                nav.style.display = canUseChat() ? 'block' : 'none';
+        }
+
+        function formatChatDate(timestamp) {
+            const d = new Date(Number(timestamp) || Date.now());
+            return new Intl.DateTimeFormat('ar-DZ', {
+                year:'numeric', month:'2-digit', day:'2-digit',
+                hour:'2-digit', minute:'2-digit', second:'2-digit',
+                hour12:false
+            }).format(d);
+        }
+
+        function listenToChat() {
+            if (!canUseChat()) return;
+
+            const box = document.getElementById('ciaChatMessages');
+            if (!box) return;
+            if (chatListenerStarted) return;
+
+            chatListenerStarted = true;
+            chatListenerRef = db.ref('chatMessages').limitToLast(300);
+
+            chatListenerRef.on('value', snapshot => {
+                const data = snapshot.val() || {};
+                const messages = Object.keys(data)
+                    .map(key => ({key, ...data[key]}))
+                    .sort((a,b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+
+                box.innerHTML = '';
+
+                if (!messages.length) {
+                    box.innerHTML = '<div class="cia-chat-empty">لا توجد رسائل حتى الآن. كن أول من يرسل رسالة.</div>';
+                    return;
+                }
+
+                messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'cia-chat-message' + (msg.sender === currentAgent ? ' mine' : '');
+
+                    div.innerHTML = `
+                        <div class="cia-chat-sender">👤 ${escapeHtml(String(msg.sender || 'عضو غير معروف'))}</div>
+                        <div class="cia-chat-text">${escapeHtml(String(msg.text || ''))}</div>
+                        <div class="cia-chat-time">📅 ${escapeHtml(formatChatDate(msg.createdAt))}</div>
+                    `;
+
+                    box.appendChild(div);
+                });
+
+                box.scrollTop = box.scrollHeight;
+            });
+        }
+
+        function handleChatKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        function sendChatMessage() {
+            if (!canUseChat()) {
+                alert('❌ لا تملك رتبة CHAT.');
+                return;
+            }
+
+            const input = document.getElementById('ciaChatInput');
+            if (!input) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (text.length > 2000) {
+                alert('❌ الرسالة طويلة جداً. الحد الأقصى 2000 حرف.');
+                return;
+            }
+
+            const messageRef = db.ref('chatMessages').push();
+
+            messageRef.set({
+                sender: currentAgent,
+                text: text,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            }, error => {
+                if (error) {
+                    alert('❌ تعذر إرسال الرسالة.');
+                    return;
+                }
+                input.value = '';
+                input.focus();
+            });
+        }
+
         function updatePermissionUI() {
 
             const reportSection = document.getElementById('adminReportsSection');
@@ -6873,6 +7104,39 @@
 
             const gangButton = document.getElementById('addGangButton');
             if (gangButton) gangButton.style.display = hasPermission('createGang') ? 'block' : 'none';
+
+            const chatCategory = document.getElementById('chatCategoryButton');
+            const chatNav = document.getElementById('chatNavButton');
+            if (chatCategory) chatCategory.classList.toggle('cia-chat-category-hidden', !canUseChat());
+            if (chatNav) chatNav.style.display = canUseChat() ? 'block' : 'none';
+
+            // عند امتلاك أكثر من رتبة، نُظهر كل الأقسام المسموح بها.
+            const allCategories = document.querySelectorAll('.cia-category');
+            allCategories.forEach(btn => {
+                if (canUseChat() && !(currentRoles.length === 1 && currentRoles.includes('chat'))) {
+                    btn.classList.remove('cia-chat-category-hidden');
+                }
+            });
+
+            if (currentRoles.length === 1 && currentRoles.includes('chat')) {
+                const restricted = [
+                    'commandCenterPanel','wantedSection','criminalSection',
+                    'reportsCreateSection','gangSection','penaltiesSection',
+                    'onlineSection','adminReportsSection','adminUsersSection'
+                ];
+                restricted.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+
+                const grid = document.querySelector('.cia-category-grid');
+                if (grid) {
+                    grid.querySelectorAll('.cia-category').forEach(btn => {
+                        if (btn.id !== 'chatCategoryButton')
+                            btn.classList.add('cia-chat-category-hidden');
+                    });
+                }
+            }
         }
 
 
